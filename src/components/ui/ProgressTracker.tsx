@@ -17,41 +17,50 @@ export default function ProgressTracker() {
     return 'Exploring pathways...';
   };
 
+  const circumference = 2 * Math.PI * 16;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
       className="fixed bottom-6 left-6 z-40"
     >
-      <div className="bg-[#12121F]/80 backdrop-blur-md rounded-xl px-4 py-3 border border-white/5">
+      <div className="bg-[#0e0e1a]/80 backdrop-blur-xl rounded-xl px-4 py-3 border border-white/[0.05]">
         <div className="flex items-center gap-3">
           {/* Progress ring */}
           <div className="relative w-10 h-10">
             <svg className="w-10 h-10 -rotate-90" viewBox="0 0 40 40">
               <circle
                 cx="20" cy="20" r="16"
-                stroke="rgba(255,255,255,0.08)"
-                strokeWidth="3"
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth="2.5"
                 fill="none"
               />
               <circle
                 cx="20" cy="20" r="16"
-                stroke="#FFD700"
-                strokeWidth="3"
+                stroke="url(#progressGradient)"
+                strokeWidth="2.5"
                 fill="none"
-                strokeDasharray={`${(explorationPercent / 100) * 100.53} 100.53`}
+                strokeDasharray={`${(explorationPercent / 100) * circumference} ${circumference}`}
                 strokeDashoffset="0"
                 strokeLinecap="round"
-                className="transition-all duration-500"
+                className="transition-all duration-700 ease-out"
               />
+              <defs>
+                <linearGradient id="progressGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#FFD700" />
+                  <stop offset="100%" stopColor="#FF00E5" />
+                </linearGradient>
+              </defs>
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white tabular-nums">
               {explorationPercent}%
             </span>
           </div>
 
           <div>
-            <p className="text-xs font-medium text-white">{getMessage()}</p>
+            <p className="text-xs font-medium text-white/80">{getMessage()}</p>
             <p className="text-[10px] text-gray-500">{visitedCount} neurons explored</p>
           </div>
         </div>
@@ -67,7 +76,7 @@ export default function ProgressTracker() {
             transition={{ duration: 0.5 }}
             className="absolute -top-10 left-0 right-0 text-center"
           >
-            <span className="text-xs font-medium text-[#FFD700] bg-[#FFD700]/10 px-3 py-1 rounded-full">
+            <span className="text-[11px] font-medium text-[#FFD700] bg-[#FFD700]/10 px-3 py-1 rounded-full border border-[#FFD700]/20">
               Milestone reached!
             </span>
           </motion.div>

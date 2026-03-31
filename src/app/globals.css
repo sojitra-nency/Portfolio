@@ -66,3 +66,18 @@ html, body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Shimmer animation for gradient text */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

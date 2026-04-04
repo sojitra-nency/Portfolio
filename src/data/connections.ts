@@ -41,7 +41,6 @@ export const connections: NeuralConnection[] = [
   { id: 'c-proj-streamify', sourceId: 'projects', targetId: 'proj-streamify', type: 'primary', strength: 0.7 },
   { id: 'c-proj-opinio', sourceId: 'projects', targetId: 'proj-opinio', type: 'primary', strength: 0.7 },
   { id: 'c-proj-scalequest', sourceId: 'projects', targetId: 'proj-scalequest', type: 'primary', strength: 0.7 },
-  { id: 'c-proj-aerobook', sourceId: 'projects', targetId: 'proj-aerobook', type: 'primary', strength: 0.6 },
   { id: 'c-proj-sentiment', sourceId: 'projects', targetId: 'proj-sentiment', type: 'primary', strength: 0.7 },
   { id: 'c-proj-nexus', sourceId: 'projects', targetId: 'proj-neural-nexus', type: 'primary', strength: 0.8 },
 

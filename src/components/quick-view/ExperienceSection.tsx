@@ -49,7 +49,7 @@ export default function ExperienceSection({
           className="absolute left-[5px] top-4 bottom-4 w-[2px] origin-top hidden sm:block"
           style={{
             scaleY: spineScaleY,
-            background: 'linear-gradient(to bottom, #00FF88, transparent)',
+            background: `linear-gradient(to bottom, ${color}, transparent)`,
           }}
         />
 
@@ -68,18 +68,27 @@ export default function ExperienceSection({
               <div className="absolute left-0 top-6 hidden sm:flex items-center justify-center">
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: '#00FF88' }}
+                  style={{ backgroundColor: color }}
                 />
                 {isFirst && (
-                  <div className="absolute w-3 h-3 rounded-full bg-[#00FF88] animate-ping" />
+                  <div
+                    className="absolute w-3 h-3 rounded-full animate-ping"
+                    style={{ backgroundColor: color }}
+                  />
                 )}
               </div>
 
               {/* Card */}
-              <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-6 hover:border-white/[0.1] hover:bg-white/[0.03] transition-all duration-300 border-t-2 border-t-[#00FF88]">
+              <div
+                className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-6 hover:border-white/[0.1] hover:bg-white/[0.03] transition-all duration-300"
+                style={{ borderTopWidth: 2, borderTopColor: color }}
+              >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#00FF88]">
+                    <h3
+                      className="text-lg font-semibold"
+                      style={{ color }}
+                    >
                       {node.label}
                     </h3>
                     <p className="text-sm text-gray-400 mt-0.5">
@@ -88,7 +97,9 @@ export default function ExperienceSection({
                   </div>
                   {stats && (
                     <div className="flex gap-4 shrink-0">
-                      {Object.entries(stats).map(([key, value]) => (
+                      {Object.entries(stats)
+                        .filter(([key]) => key !== 'Projects')
+                        .map(([key, value]) => (
                         <div key={key} className="sm:text-right">
                           <p className="font-[var(--font-mono)] text-[10px] text-gray-600 uppercase">
                             {key}
@@ -99,8 +110,14 @@ export default function ExperienceSection({
                                 {value.replace('Present', '').trim()}{' '}
                                 <span className="inline-flex items-center gap-1">
                                   <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF88] opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00FF88]" />
+                                    <span
+                                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                    <span
+                                      className="relative inline-flex rounded-full h-2 w-2"
+                                      style={{ backgroundColor: color }}
+                                    />
                                   </span>
                                   Present
                                 </span>
@@ -119,6 +136,16 @@ export default function ExperienceSection({
                   {node.description}
                 </p>
 
+                {/* Key Projects highlight */}
+                {stats?.Projects && (
+                  <div className="mb-3 px-3 py-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1 font-semibold">Key Projects</p>
+                    <p className="text-[12px] font-medium" style={{ color: `${color}cc` }}>
+                      {stats.Projects}
+                    </p>
+                  </div>
+                )}
+
                 {tags && tags.length > 0 && (
                   <motion.div
                     className="flex flex-wrap gap-1.5"
@@ -128,7 +155,12 @@ export default function ExperienceSection({
                       <motion.span
                         key={tag}
                         variants={tagReveal}
-                        className="px-2 py-0.5 text-[10px] rounded-md font-medium text-[#00FF88]/75 bg-[#00FF88]/[0.06] border border-[#00FF88]/[0.12]"
+                        className="px-2 py-0.5 text-[10px] rounded-md font-medium"
+                        style={{
+                          color: `${color}bf`,
+                          backgroundColor: `${color}0f`,
+                          border: `1px solid ${color}1f`,
+                        }}
                       >
                         {tag}
                       </motion.span>

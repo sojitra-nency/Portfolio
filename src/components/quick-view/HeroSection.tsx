@@ -167,8 +167,8 @@ export default function HeroSection({ name, summary }: HeroSectionProps) {
             <motion.div variants={itemVariants} className="flex flex-wrap justify-center md:justify-start gap-8 pt-2">
               {[
                 { value: '3+', label: 'Years Experience' },
-                { value: '13', label: 'Projects Shipped' },
-                { value: '4', label: 'Certifications' },
+                { value: '16', label: 'Projects Shipped' },
+                { value: '19', label: 'Certifications' },
               ].map((stat) => (
                 <div key={stat.label} className="text-center md:text-left">
                   <p className="text-2xl sm:text-3xl font-bold text-white font-[var(--font-syne)]">

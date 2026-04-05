@@ -26,8 +26,8 @@ export default function QuickViewPage() {
   const sectionDefs = [
     { id: 'about', label: 'About Me' },
     { id: 'skills', label: 'Skills' },
-    { id: 'projects', label: 'Projects' },
     { id: 'experience', label: 'Experience' },
+    { id: 'projects', label: 'Projects' },
     { id: 'education', label: 'Education' },
     { id: 'certifications', label: 'Certifications' },
     { id: 'contact', label: 'Contact' },
@@ -84,16 +84,16 @@ export default function QuickViewPage() {
           subtitle={skillsParent.description}
         />
 
-        <ProjectsSection
-          nodes={getChildren('projects')}
-          color={CATEGORY_COLORS[projectsParent.category]}
-          subtitle={projectsParent.description}
-        />
-
         <ExperienceSection
           nodes={getChildren('experience')}
           color={CATEGORY_COLORS[experienceParent.category]}
           subtitle={experienceParent.description}
+        />
+
+        <ProjectsSection
+          nodes={getChildren('projects')}
+          color={CATEGORY_COLORS[projectsParent.category]}
+          subtitle={projectsParent.description}
         />
 
         <EducationSection

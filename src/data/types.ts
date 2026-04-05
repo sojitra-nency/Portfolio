@@ -63,8 +63,8 @@ export const CATEGORY_COLORS: Record<NodeCategory, string> = {
   about: '#00F0FF',
   skills: '#FF00E5',
   projects: '#4D7CFF',
-  experience: '#00FF88',
-  education: '#FFB800',
+  experience: '#14B8A6',
+  education: '#F59E0B',
   contact: '#FFFFFF',
   tools: '#8B5CF6',
 };

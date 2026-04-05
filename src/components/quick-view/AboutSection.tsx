@@ -56,14 +56,14 @@ const CARD_ICONS = [
   </svg>,
 ];
 
-const CARD_NUMBER = ['01', '02', '03'];
+const CARD_NUMBER = ['01', '02', '03', '04', '05'];
 const ABOUT_HIGHLIGHTS = [
   { label: 'Based In', value: 'Surat, Gujarat' },
   { label: 'Experience', value: '3+ Years' },
   { label: 'Focus', value: 'Backend + AI Systems' },
 ];
 
-const CARD_TILT_Y = [-10, 0, 10]; // left tilt, no tilt, right tilt
+const CARD_TILT_Y = [-12, 12, -12, -12, 12];
 
 const cardVariant = {
   hidden: { opacity: 0, y: 60, rotateX: 8 },
@@ -122,7 +122,7 @@ function TiltCard({
       style={{ perspective: 800 }}
       onMouseMove={handleMouse}
       onMouseLeave={handleLeave}
-      whileHover={{ y: -4, scale: 1.015, rotateY: CARD_TILT_Y[index] }}
+      whileHover={{ y: -4, scale: 1.015 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       <motion.div
@@ -298,7 +298,7 @@ export default function AboutSection({ nodes, color, subtitle }: AboutSectionPro
         </motion.div>
 
         <motion.div
-          className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+          className="grid gap-5 md:grid-cols-2 xl:grid-cols-6"
           variants={staggerContainer(0.18)}
           initial="hidden"
           whileInView="visible"
@@ -306,7 +306,22 @@ export default function AboutSection({ nodes, color, subtitle }: AboutSectionPro
           style={{ perspective: 1000 }}
         >
           {nodes.map((node, i) => (
-            <TiltCard key={node.id} node={node} color={color} index={i} />
+            <motion.div
+              key={node.id}
+              className={
+                nodes.length === 5 && i === 3
+                  ? 'xl:col-start-2 xl:col-span-2 md:col-span-1'
+                  : 'xl:col-span-2 md:col-span-1'
+              }
+              variants={{ hidden: {}, visible: {} }}
+              whileHover={{
+                rotateY: CARD_TILT_Y[i],
+                transition: { duration: 0.3, ease: 'easeOut' },
+              }}
+              style={{ perspective: 800 }}
+            >
+              <TiltCard node={node} color={color} index={i} />
+            </motion.div>
           ))}
         </motion.div>
       </div>

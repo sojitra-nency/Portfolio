@@ -24,7 +24,7 @@ export const nodes: NeuralNode[] = [
     parentId: 'origin',
     summary: 'The person behind the code',
     description:
-      'Full Stack Python Developer based in Surat, Gujarat. 3+ years building production systems — from ML freelancing to enterprise SaaS platforms.',
+      'Full Stack Python Developer based in Surat, Gujarat. 3+ years of hands-on experience building production systems — from ML freelancing and computer vision projects to enterprise SaaS platforms, multi-tenant CRMs, and data integration pipelines serving 50+ locations.',
     isHidden: false,
   },
   {
@@ -55,9 +55,9 @@ export const nodes: NeuralNode[] = [
     category: 'experience',
     level: 1,
     parentId: 'origin',
-    summary: 'Where I shipped code',
+    summary: 'Where I shipped production code',
     description:
-      'Full-time roles and freelancing across software development, Python backend engineering, and ML engineering.',
+      'From freelance ML engineering to full-time backend development — 3+ years building production systems including enterprise CRMs, data integration pipelines, and SaaS platforms.',
     isHidden: false,
   },
   {
@@ -583,6 +583,45 @@ export const nodes: NeuralNode[] = [
     },
     isHidden: false,
   },
+  {
+    id: 'proj-twiititude',
+    label: 'Twiititude',
+    category: 'projects',
+    level: 2,
+    parentId: 'projects',
+    summary: 'Twitter Sentiment Analysis Platform',
+    description:
+      'Built a full-stack Twitter sentiment analysis platform with dual deployment options — a complete frontend + backend version with an interactive UI, and a standalone backend-only API. Classifies the emotional tone of tweets using Python-based NLP pipelines with HTML-rendered visualizations for sentiment distribution and trend analysis.',
+    metadata: {
+      tags: ['Python', 'HTML', 'NLP', 'Sentiment Analysis', 'Flask'],
+      stats: {
+        'Role': 'ML Engineer',
+        'Type': 'NLP / Sentiment',
+        'Modes': 'Full-Stack + API',
+      },
+      url: 'https://github.com/sojitra-nency/Twiititude---Twitter-Sentiment-Analysis',
+    },
+    isHidden: false,
+  },
+  {
+    id: 'proj-snakegame',
+    label: 'Snake Game',
+    category: 'projects',
+    level: 2,
+    parentId: 'projects',
+    summary: 'Classic Snake Game with Pygame',
+    description:
+      'Built the classic Snake game in Python using Pygame. Features real-time score tracking, collision detection with boundaries and self, automatic snake movement with arrow key controls, and customizable game constants for window size, segment sizing, and color schemes.',
+    metadata: {
+      tags: ['Python', 'Pygame', 'Game Development'],
+      stats: {
+        'Role': 'Developer',
+        'Type': 'Game',
+      },
+      url: 'https://github.com/sojitra-nency/Snake_Game',
+    },
+    isHidden: false,
+  },
   // ─── Level 2: Experience Cluster ───
   {
     id: 'exp-lanet',
@@ -592,25 +631,10 @@ export const nodes: NeuralNode[] = [
     parentId: 'experience',
     summary: 'La Net Team Software Solutions Pvt, Ltd.',
     description:
-      'Built production APIs with Django/FastAPI, designed scalable PostgreSQL schemas, implemented Celery pipelines, and integrated external systems. Delivered high-velocity backend features with strong reliability.',
+      'Building production-grade backend systems for enterprise clients. Key projects include Rooflink — a multi-tenant CRM for the roofing industry with RBAC, Celery-powered async pipelines, and modular REST APIs; Toca Football — an enterprise data integration platform that unified booking, CRM, and operations data from 4 source systems (MBO, DSR, SevenRooms, BondSports) into Snowflake and HubSpot across 50+ franchise locations; and FutureForce — a collaborative AI publishing platform with Crew AI multi-agent orchestration, n8n workflow automation, and real-time collaborative editing. Designed scalable PostgreSQL schemas, implemented robust ETL jobs with retry logic, and delivered high-velocity features with strong test coverage.',
     metadata: {
-      tags: ['Django', 'FastAPI', 'PostgreSQL', 'Celery', 'React.js'],
-      stats: { 'Duration': 'Dec 2023 – Present', 'Location': 'Surat', 'Tenure': '2.5+ years' },
-    },
-    isHidden: false,
-  },
-  {
-    id: 'exp-agritech',
-    label: 'Python Developer',
-    category: 'experience',
-    level: 2,
-    parentId: 'experience',
-    summary: 'Agritechnosol Company (Freelancing)',
-    description:
-      'Built data acquisition modules, API-driven services, and test-first parsing utilities that powered internal dashboard APIs.',
-    metadata: {
-      tags: ['Python', 'API Development', 'Data Processing'],
-      stats: { 'Duration': 'Jun – Nov 2022', 'Type': 'Freelance', 'Tenure': '6 months' },
+      tags: ['Django', 'FastAPI', 'PostgreSQL', 'Celery', 'React.js', 'Snowflake', 'HubSpot APIs', 'Crew AI', 'n8n'],
+      stats: { 'Duration': 'Dec 2023 – Present', 'Location': 'Surat', 'Tenure': '2.5+ years', 'Projects': 'Rooflink, Toca Football, FutureForce' },
     },
     isHidden: false,
   },
@@ -622,10 +646,10 @@ export const nodes: NeuralNode[] = [
     parentId: 'experience',
     summary: 'Anubhav Consultancy (Freelancing)',
     description:
-      'Built modular computer vision programs and data processing pipelines that enabled analytics and research workflows.',
+      'Built modular computer vision programs and data processing pipelines for analytics and research. Developed image processing tools using OpenCV and scikit-image for automated detection workflows, including bacterial colony counting systems with configurable CV methods. Built ScaleQuest — an interactive MAUT decision analytics tool with AHP, TOPSIS, and LOSS methodologies, deployed as a Streamlit web app with Jupyter analysis pipelines. Created reusable data parsing utilities and API-driven services that powered internal dashboards.',
     metadata: {
-      tags: ['Python', 'OpenCV', 'Computer Vision', 'Data Modeling'],
-      stats: { 'Duration': 'Dec 2021 – May 2022', 'Type': 'Freelance', 'Tenure': '6 months' },
+      tags: ['Python', 'OpenCV', 'Computer Vision', 'Data Modeling', 'scikit-image', 'Streamlit', 'MAUT'],
+      stats: { 'Duration': 'Dec 2021 – May 2022', 'Type': 'Freelance', 'Tenure': '6 months', 'Projects': 'MicroQuant, ScaleQuest' },
     },
     isHidden: false,
   },
@@ -671,7 +695,35 @@ export const nodes: NeuralNode[] = [
     parentId: 'about',
     summary: 'From ML freelancing to production SaaS',
     description:
-      'Started with ML and data processing freelancing, now building scalable SaaS platforms. 3+ years of production experience with robust SQL schemas, async pipelines, and modular architectures.',
+      'Started with CV freelancing (MicroQuant, ScaleQuest), now building enterprise systems at La Net Team — Rooflink, Toca Football, and FutureForce. 3+ years shipping scalable software.',
+    metadata: {
+      tags: ['Python', 'Django', 'FastAPI', 'PostgreSQL'],
+    },
+    isHidden: false,
+  },
+  {
+    id: 'about-approach',
+    label: 'How I Work',
+    category: 'about',
+    level: 2,
+    parentId: 'about',
+    summary: 'Structured, collaborative, and fast',
+    description:
+      'Problem-first thinking, small testable modules, proactive communication. AI-assisted dev with Claude Code and Cursor. End-to-end ownership from schema design to deployment.',
+    metadata: {
+      tags: ['Problem-First', 'End-to-End Ownership', 'AI-Assisted Dev'],
+    },
+    isHidden: false,
+  },
+  {
+    id: 'about-beyond',
+    label: 'Beyond Code',
+    category: 'about',
+    level: 2,
+    parentId: 'about',
+    summary: 'What drives me outside the terminal',
+    description:
+      'Exploring emerging tech, open-source contributions, and mentoring peers on Python and backend dev. Every project is a side quest for elegant solutions.',
     isHidden: false,
   },
   {
@@ -682,7 +734,10 @@ export const nodes: NeuralNode[] = [
     parentId: 'about',
     summary: 'Where curiosity meets code',
     description:
-      'Scalable backend systems, AI/LLM workflows in production, clean API architecture, and the intersection of full-stack development and machine learning.',
+      'Scalable backends, AI/LLM integration, clean API design. Currently exploring multi-agent orchestration (Crew AI), workflow automation (n8n), and ML-to-production pipelines.',
+    metadata: {
+      tags: ['Backend Architecture', 'AI/ML', 'API Design', 'LLM Integration'],
+    },
     isHidden: false,
   },
   {
@@ -693,7 +748,10 @@ export const nodes: NeuralNode[] = [
     parentId: 'about',
     summary: 'Ship clean. Ship tested. Ship fast.',
     description:
-      'Maintainable code, strong ownership, production-ready solutions. Clean docs, TDD, and modular architecture at the core of every build.',
+      'Maintainable code, strong ownership, TDD, modular architecture. Every feature ships production-ready — no shortcuts, no tech debt by default.',
+    metadata: {
+      tags: ['TDD', 'Clean Code', 'Modular Architecture', 'Documentation'],
+    },
     isHidden: false,
   },
 

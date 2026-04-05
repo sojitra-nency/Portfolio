@@ -43,10 +43,11 @@ export const connections: NeuralConnection[] = [
   { id: 'c-proj-scalequest', sourceId: 'projects', targetId: 'proj-scalequest', type: 'primary', strength: 0.7 },
   { id: 'c-proj-sentiment', sourceId: 'projects', targetId: 'proj-sentiment', type: 'primary', strength: 0.7 },
   { id: 'c-proj-nexus', sourceId: 'projects', targetId: 'proj-neural-nexus', type: 'primary', strength: 0.8 },
+  { id: 'c-proj-twiititude', sourceId: 'projects', targetId: 'proj-twiititude', type: 'primary', strength: 0.7 },
+  { id: 'c-proj-snakegame', sourceId: 'projects', targetId: 'proj-snakegame', type: 'primary', strength: 0.6 },
 
   // ─── Experience (Level 1 → 2) ───
   { id: 'c-exp-lanet', sourceId: 'experience', targetId: 'exp-lanet', type: 'primary', strength: 1.0 },
-  { id: 'c-exp-agritech', sourceId: 'experience', targetId: 'exp-agritech', type: 'primary', strength: 0.7 },
   { id: 'c-exp-anubhav', sourceId: 'experience', targetId: 'exp-anubhav', type: 'primary', strength: 0.7 },
 
   // ─── Education (Level 1 → 2) ───
@@ -57,6 +58,8 @@ export const connections: NeuralConnection[] = [
   { id: 'c-about-bg', sourceId: 'about', targetId: 'about-background', type: 'primary', strength: 0.8 },
   { id: 'c-about-int', sourceId: 'about', targetId: 'about-interests', type: 'primary', strength: 0.7 },
   { id: 'c-about-phil', sourceId: 'about', targetId: 'about-philosophy', type: 'primary', strength: 0.7 },
+  { id: 'c-about-approach', sourceId: 'about', targetId: 'about-approach', type: 'primary', strength: 0.7 },
+  { id: 'c-about-beyond', sourceId: 'about', targetId: 'about-beyond', type: 'primary', strength: 0.6 },
 
   // ─── Contact (Level 1 → 2) ───
   { id: 'c-contact-email', sourceId: 'contact', targetId: 'contact-email', type: 'primary', strength: 0.9 },
@@ -94,7 +97,6 @@ export const connections: NeuralConnection[] = [
   { id: 'x-lanet-langs', sourceId: 'exp-lanet', targetId: 'skill-langs', type: 'cross-domain', strength: 0.9 },
   { id: 'x-lanet-db', sourceId: 'exp-lanet', targetId: 'skill-db', type: 'cross-domain', strength: 0.8 },
   { id: 'x-lanet-int', sourceId: 'exp-lanet', targetId: 'skill-integrations', type: 'cross-domain', strength: 0.7 },
-  { id: 'x-agritech-python', sourceId: 'exp-agritech', targetId: 'tool-python', type: 'cross-domain', strength: 0.7 },
   { id: 'x-anubhav-ai', sourceId: 'exp-anubhav', targetId: 'skill-ai', type: 'cross-domain', strength: 0.7 },
 
   // ─── Cross-domain: Education → Skills ───

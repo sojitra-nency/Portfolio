@@ -129,8 +129,8 @@ export default function AnimatedHero({ name, summary }: AnimatedHeroProps) {
           <div style={reveal(4)} className="flex justify-center gap-10 pt-2">
             {[
               { value: '3+', label: 'Years Experience' },
-              { value: '13', label: 'Projects Shipped' },
-              { value: '4', label: 'Certifications' },
+              { value: '16', label: 'Projects Shipped' },
+              { value: '19', label: 'Certifications' },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-white font-[var(--font-syne)]">{stat.value}</p>

@@ -26,6 +26,7 @@ import StarField from './scene/StarField';
 import VolumetricFog from './scene/VolumetricFog';
 import SceneLighting from './scene/SceneLighting';
 import NeuralNetwork from './NeuralNetwork';
+import UnlockReveal from './nodes/UnlockReveal';
 import CinemaCamera from './camera/CinemaCamera';
 import EffectsStack from './postprocessing/EffectsStack';
 
@@ -145,6 +146,7 @@ export default function NeuralScene() {
             <VolumetricFog />
             <SceneLighting />
             <NeuralNetwork />
+            <UnlockReveal />
             <CinemaCamera />
             <EffectsStack />
 

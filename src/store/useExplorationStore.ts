@@ -56,8 +56,40 @@ export interface ExplorationState {
   visit: (id: string) => void;
 
   /** Evaluate unlock conditions against the current visited set and add
-   * newly-unlocked node ids to `unlockedNodes`. Safe to call ad-hoc. */
+   * newly-unlocked node ids to `unlockedNodes`. Safe to call ad-hoc.
+   * Emits via `onUnlock()` for each newly-added id. */
   checkUnlocks: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Unlock pub/sub — fires whenever a node transitions from locked → unlocked.
+// Consumers subscribe via `onUnlock()`; the module-level listener set is
+// fired synchronously from `checkUnlocks`, so subscribers run before React's
+// next render (which lets UnlockReveal populate its activeReveals map in
+// time for the newly-mounting Neuron to pick up the "just unlocking" state).
+// ---------------------------------------------------------------------------
+
+type UnlockListener = (id: string) => void;
+const unlockListeners = new Set<UnlockListener>();
+
+/** Subscribe to unlock events. Returns an unsubscribe function suitable
+ * as a `useEffect` cleanup. */
+export function onUnlock(listener: UnlockListener): () => void {
+  unlockListeners.add(listener);
+  return () => {
+    unlockListeners.delete(listener);
+  };
+}
+
+function emitUnlock(id: string): void {
+  for (const listener of unlockListeners) {
+    try {
+      listener(id);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[useExplorationStore] unlock listener threw', err);
+    }
+  }
 }
 
 /**
@@ -105,16 +137,28 @@ export const useExplorationStore = create<ExplorationState>()(
         checkUnlocks: () => {
           const { visitedNodes, unlockedNodes, explorationPercent } = get();
           const next = new Set(unlockedNodes);
+          const newlyUnlocked: string[] = [];
 
-          if (PRIMARY_CLUSTERS.every((id) => visitedNodes.has(id))) {
+          if (
+            PRIMARY_CLUSTERS.every((id) => visitedNodes.has(id)) &&
+            !unlockedNodes.has('hidden-funfacts')
+          ) {
             next.add('hidden-funfacts');
+            newlyUnlocked.push('hidden-funfacts');
           }
-          if (explorationPercent >= 90) {
+          if (
+            explorationPercent >= 90 &&
+            !unlockedNodes.has('hidden-future')
+          ) {
             next.add('hidden-future');
+            newlyUnlocked.push('hidden-future');
           }
 
-          if (next.size !== unlockedNodes.size) {
+          if (newlyUnlocked.length > 0) {
             set({ unlockedNodes: next });
+            // Emit AFTER the state update so listeners that read the store
+            // (e.g. UnlockReveal looking up the node) see the new set.
+            for (const id of newlyUnlocked) emitUnlock(id);
           }
         },
       }),

@@ -21,6 +21,7 @@ import useForceLayout from '@/hooks/useForceLayout';
 import useChainReaction from '@/hooks/useChainReaction';
 import usePointerMagnetism from '@/hooks/usePointerMagnetism';
 import { useGraphStore } from '@/store/useGraphStore';
+import { useExplorationStore } from '@/store/useExplorationStore';
 import Neuron from './nodes/Neuron';
 import ConnectionsLayer from './connections/ConnectionsLayer';
 
@@ -35,14 +36,19 @@ export default function NeuralNetwork() {
   // Neuron.tsx applies as a position offset.
   usePointerMagnetism();
 
-  // Re-derive the visible set when the expanded-cluster set changes. The
-  // store's `nodes` array is immutable post-seed, so no other dependency
-  // is needed.
+  // Re-derive the visible set when the expanded-cluster set OR the
+  // unlocked-nodes set changes. Unlocked hidden nodes are unioned into
+  // the base visibility so they can materialise in via UnlockReveal.
   const expandedClusters = useGraphStore((s) => s.expandedClusters);
-  const visibleNodes = useMemo(
-    () => useGraphStore.getState().getVisibleNodes(),
-    [expandedClusters],
-  );
+  const unlockedNodes = useExplorationStore((s) => s.unlockedNodes);
+  const visibleNodes = useMemo(() => {
+    const base = useGraphStore.getState().getVisibleNodes();
+    const all = useGraphStore.getState().nodes;
+    const unlockedHidden = all.filter(
+      (n) => n.isHidden && unlockedNodes.has(n.id),
+    );
+    return [...base, ...unlockedHidden];
+  }, [expandedClusters, unlockedNodes]);
 
   return (
     <>

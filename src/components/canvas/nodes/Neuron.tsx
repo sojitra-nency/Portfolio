@@ -29,11 +29,13 @@ import * as THREE from 'three';
 
 import { useGraphStore } from '@/store/useGraphStore';
 import { useCinemaStore } from '@/store/useCinemaStore';
+import { useExplorationStore } from '@/store/useExplorationStore';
 import { CATEGORY_COLORS } from '@/data/types';
 import type { NeuralNode, NodeLevel } from '@/data/types';
 import { fire, preFire, registerPulse } from '@/hooks/useChainReaction';
 import { registerVelocity } from '@/hooks/usePointerMagnetism';
 import { playFX } from '@/hooks/useAudio';
+import { hasActiveReveal, registerReveal } from './UnlockReveal';
 
 import NeuronCore from './NeuronCore';
 import NeuronHalo from './NeuronHalo';
@@ -51,6 +53,10 @@ const SIZE_BY_LEVEL: Record<NodeLevel, number> = {
   3: 0.6, // tools
   4: 0.5, // hidden
 };
+
+/** Maximum jitter magnitude (world units) at reveal = 0. Damps to zero
+ * as the reveal envelope approaches 1. */
+const REVEAL_JITTER = 0.5;
 
 // ---------------------------------------------------------------------------
 // Neuron
@@ -82,8 +88,19 @@ function Neuron({ node }: NeuronProps) {
   // out of range or magnetism is disabled (mobile / reduced motion).
   const velocityRef = useRef<THREE.Vector3>(new THREE.Vector3());
 
-  // Group ref — used to set world position imperatively each frame so
-  // the magnetism nudge composites cleanly on top of the base position.
+  // Reveal envelope — 0 while a hidden node is glitch-materialising,
+  // 1 when fully revealed (or always 1 for non-hidden nodes). Written
+  // by UnlockReveal's per-frame loop.
+  //
+  // Initial value: if this node is hidden AND an unlock just fired for it,
+  // start at 0 so the Neuron mounts invisible and scales in. Otherwise
+  // (non-hidden, or hidden-but-previously-unlocked across sessions) start
+  // at 1 so it's immediately visible.
+  const revealRef = useRef<number>(
+    node.isHidden && hasActiveReveal(node.id) ? 0 : 1,
+  );
+
+  // Group ref — used to set world position + scale imperatively each frame.
   const groupRef = useRef<THREE.Group>(null);
 
   // Publish our pulse ref to the chain-reaction registry on mount.
@@ -96,18 +113,28 @@ function Neuron({ node }: NeuronProps) {
     return registerVelocity(node.id, velocityRef);
   }, [node.id]);
 
-  // Each frame: compose the group's position from the base (force-layout)
-  // position plus the magnetism offset. When velocity is zero the result
-  // equals the base, so this is effectively a no-op on low-end / reduced-
-  // motion paths.
+  // Publish our reveal ref to UnlockReveal's registry on mount.
+  useEffect(() => {
+    return registerReveal(node.id, revealRef);
+  }, [node.id]);
+
+  // Each frame: compose the group's position/scale from:
+  //   base (force-layout) position  +  magnetism velocity  +  reveal jitter
+  // Scale derives from the reveal envelope (0 → 1.08 → 1). Jitter amount
+  // damps as the reveal progresses so the node trembles heavily at first
+  // and settles smoothly. For non-hidden nodes the reveal is pinned to 1
+  // and this reduces to the same base+velocity update we had before.
   useFrame(() => {
     if (!position || !groupRef.current) return;
     const v = velocityRef.current;
+    const reveal = revealRef.current;
+    const jitter = Math.max(0, 1 - reveal) * REVEAL_JITTER;
     groupRef.current.position.set(
-      position.x + v.x,
-      position.y + v.y,
-      position.z + v.z,
+      position.x + v.x + (Math.random() - 0.5) * jitter,
+      position.y + v.y + (Math.random() - 0.5) * jitter,
+      position.z + v.z + (Math.random() - 0.5) * jitter,
     );
+    groupRef.current.scale.setScalar(Math.max(0, reveal));
   });
 
   // Cached geometry for this node's category. Shared across all neurons
@@ -150,6 +177,10 @@ function Neuron({ node }: NeuronProps) {
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
       activate(node.id);
+      // Mark as visited for progressive-discovery tracking — feeds the
+      // CoherenceMeter percentage and the unlock detection in
+      // useExplorationStore.checkUnlocks.
+      useExplorationStore.getState().visit(node.id);
       // Full chain reaction: source + 1-hop + 2-hop waves.
       fire(node.id);
       // Cinema focus — CinemaCamera lerps to the node.

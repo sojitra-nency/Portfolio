@@ -12,6 +12,7 @@ import NeuralMap from '@/components/hud/NeuralMap';
 import DetailCard from '@/components/hud/DetailCard';
 import CommTooltip from '@/components/hud/CommTooltip';
 import KeyCheatSheet from '@/components/hud/KeyCheatSheet';
+import UnlockBanner from '@/components/hud/UnlockBanner';
 import { useHudStore } from '@/store/useHudStore';
 
 /**
@@ -55,6 +56,7 @@ export default function Home() {
           <DetailCard />
           <CommTooltip />
           <KeyCheatSheet />
+          <UnlockBanner />
         </>
       )}
     </main>

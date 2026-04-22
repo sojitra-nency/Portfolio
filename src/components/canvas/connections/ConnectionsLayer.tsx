@@ -16,6 +16,7 @@
 import { useMemo } from 'react';
 
 import { useGraphStore } from '@/store/useGraphStore';
+import { useExplorationStore } from '@/store/useExplorationStore';
 import { CATEGORY_COLORS } from '@/data/types';
 import Synapse from './Synapse';
 
@@ -36,11 +37,17 @@ export default function ConnectionsLayer() {
   );
 
   // Derive visible ids from the same source the network uses so a
-  // connection is rendered iff both its neurons are.
+  // connection is rendered iff both its neurons are. Includes unlocked
+  // hidden nodes so edges to freshly-revealed neurons show up.
+  const unlockedNodes = useExplorationStore((s) => s.unlockedNodes);
   const visibleIds = useMemo(() => {
-    const visible = useGraphStore.getState().getVisibleNodes();
-    return new Set(visible.map((n) => n.id));
-  }, [expandedClusters]);
+    const base = useGraphStore.getState().getVisibleNodes();
+    const all = useGraphStore.getState().nodes;
+    const unlockedHidden = all.filter(
+      (n) => n.isHidden && unlockedNodes.has(n.id),
+    );
+    return new Set([...base, ...unlockedHidden].map((n) => n.id));
+  }, [expandedClusters, unlockedNodes]);
 
   const visibleConnections = useMemo(() => {
     return connections.filter(

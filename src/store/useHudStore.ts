@@ -36,6 +36,13 @@ export interface HudState {
    * animate the ChromaticAberration offset. */
   chromaticSpikeEndAt: number;
 
+  /** Viewport width is below 768 px — keep in sync with `useResponsive`. */
+  isMobile: boolean;
+  /** User has `prefers-reduced-motion: reduce` set in their OS. */
+  isReducedMotion: boolean;
+  /** GPU tier resolved asynchronously by `useResponsive` via detect-gpu. */
+  gpuTier: 0 | 1 | 2 | 3;
+
   setBootComplete: (value: boolean) => void;
   setDetailOpen: (value: boolean) => void;
   setCheatSheetOpen: (value: boolean) => void;
@@ -44,6 +51,9 @@ export interface HudState {
   /** Trigger a brief chromatic-aberration pulse — typically wired to
    * chain-reaction fire events for a "signal shock" feel. */
   chromaticSpike: () => void;
+  setMobile: (value: boolean) => void;
+  setReducedMotion: (value: boolean) => void;
+  setGpuTier: (tier: 0 | 1 | 2 | 3) => void;
 }
 
 export const useHudStore = create<HudState>()(
@@ -54,6 +64,10 @@ export const useHudStore = create<HudState>()(
     isTourActive: false,
     commTooltipText: null,
     chromaticSpikeEndAt: 0,
+    // SSR-safe defaults — `useResponsive` updates these on mount.
+    isMobile: false,
+    isReducedMotion: false,
+    gpuTier: 2,
 
     setBootComplete: (value) => set({ isBootComplete: value }),
     setDetailOpen: (value) => set({ isDetailOpen: value }),
@@ -65,5 +79,8 @@ export const useHudStore = create<HudState>()(
         chromaticSpikeEndAt:
           performance.now() / 1000 + CHROMATIC_SPIKE_DURATION,
       }),
+    setMobile: (value) => set({ isMobile: value }),
+    setReducedMotion: (value) => set({ isReducedMotion: value }),
+    setGpuTier: (tier) => set({ gpuTier: tier }),
   })),
 );

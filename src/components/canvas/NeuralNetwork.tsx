@@ -19,6 +19,7 @@ import { useMemo } from 'react';
 
 import useForceLayout from '@/hooks/useForceLayout';
 import useChainReaction from '@/hooks/useChainReaction';
+import usePointerMagnetism from '@/hooks/usePointerMagnetism';
 import { useGraphStore } from '@/store/useGraphStore';
 import Neuron from './nodes/Neuron';
 import ConnectionsLayer from './connections/ConnectionsLayer';
@@ -29,6 +30,10 @@ export default function NeuralNetwork() {
   // every registered neuron's pulseRef. Mounted once here so individual
   // Neuron components don't each register their own useFrame.
   useChainReaction();
+  // Pointer-magnetism — cursor attracts nearby neurons (desktop only,
+  // skipped on reduced motion). Writes per-node velocity refs that
+  // Neuron.tsx applies as a position offset.
+  usePointerMagnetism();
 
   // Re-derive the visible set when the expanded-cluster set changes. The
   // store's `nodes` array is immutable post-seed, so no other dependency

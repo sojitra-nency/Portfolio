@@ -22,14 +22,17 @@
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
+import * as THREE from 'three';
 
 import { useGraphStore } from '@/store/useGraphStore';
 import { useCinemaStore } from '@/store/useCinemaStore';
 import { CATEGORY_COLORS } from '@/data/types';
 import type { NeuralNode, NodeLevel } from '@/data/types';
 import { fire, preFire, registerPulse } from '@/hooks/useChainReaction';
+import { registerVelocity } from '@/hooks/usePointerMagnetism';
 
 import NeuronCore from './NeuronCore';
 import NeuronHalo from './NeuronHalo';
@@ -73,10 +76,38 @@ function Neuron({ node }: NeuronProps) {
   // Written centrally by `useChainReaction`'s useFrame (Task 19).
   const pulseRef = useRef<number>(0);
 
+  // Pointer-magnetism offset — written by `usePointerMagnetism` (Task 22)
+  // and applied to the group's position below. Zero when the cursor is
+  // out of range or magnetism is disabled (mobile / reduced motion).
+  const velocityRef = useRef<THREE.Vector3>(new THREE.Vector3());
+
+  // Group ref — used to set world position imperatively each frame so
+  // the magnetism nudge composites cleanly on top of the base position.
+  const groupRef = useRef<THREE.Group>(null);
+
   // Publish our pulse ref to the chain-reaction registry on mount.
   useEffect(() => {
     return registerPulse(node.id, pulseRef);
   }, [node.id]);
+
+  // Publish our velocity ref to the pointer-magnetism registry on mount.
+  useEffect(() => {
+    return registerVelocity(node.id, velocityRef);
+  }, [node.id]);
+
+  // Each frame: compose the group's position from the base (force-layout)
+  // position plus the magnetism offset. When velocity is zero the result
+  // equals the base, so this is effectively a no-op on low-end / reduced-
+  // motion paths.
+  useFrame(() => {
+    if (!position || !groupRef.current) return;
+    const v = velocityRef.current;
+    groupRef.current.position.set(
+      position.x + v.x,
+      position.y + v.y,
+      position.z + v.z,
+    );
+  });
 
   // Cached geometry for this node's category. Shared across all neurons
   // of the same category — geometryFor memoizes.
@@ -130,6 +161,7 @@ function Neuron({ node }: NeuronProps) {
 
   return (
     <group
+      ref={groupRef}
       position={[position.x, position.y, position.z]}
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}

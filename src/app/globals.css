@@ -6,6 +6,19 @@
   --background: #0A0A1A;
   --foreground: #F0F0F0;
   --surface: #12121F;
+
+  /* Neural View design tokens */
+  --void: #04050E;
+  --void-warm: #0A0A1A;
+  --synapse: #7CD3FF;
+  --rim: #C8B6FF;
+  --signal: #FFFFFF;
+
+  /* Neural View motion tokens */
+  --neural-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --neural-duration-fast: 180ms;
+  --neural-duration-base: 550ms;
+  --neural-duration-cinema: 900ms;
 }
 
 * {
@@ -116,4 +129,19 @@ html, body {
 @keyframes skill-glow-pulse {
   0%, 100% { box-shadow: 0 0 8px var(--pill-glow), 0 0 2px var(--pill-glow); }
   50% { box-shadow: 0 0 20px var(--pill-glow), 0 0 40px var(--pill-glow), 0 0 6px var(--pill-glow); }
+}
+
+/* Neural View — idle breathing pulse for neurons and HUD beacons */
+@keyframes neural-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.animate-neural-pulse {
+  animation: neural-pulse 3.2s ease-in-out infinite;
+}
+
+/* Neural View — monospace HUD utility (JetBrains Mono via next/font) */
+.font-mono-hud {
+  font-family: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 }

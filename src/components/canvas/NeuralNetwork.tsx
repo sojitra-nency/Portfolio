@@ -20,6 +20,7 @@ import { useMemo } from 'react';
 import useForceLayout from '@/hooks/useForceLayout';
 import { useGraphStore } from '@/store/useGraphStore';
 import Neuron from './nodes/Neuron';
+import ConnectionsLayer from './connections/ConnectionsLayer';
 
 export default function NeuralNetwork() {
   useForceLayout();
@@ -35,6 +36,9 @@ export default function NeuralNetwork() {
 
   return (
     <>
+      {/* Connections render first so transparent tubes sit behind
+       * neurons in R3F's render order. */}
+      <ConnectionsLayer />
       {visibleNodes.map((node) => (
         <Neuron key={node.id} node={node} />
       ))}

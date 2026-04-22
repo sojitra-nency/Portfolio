@@ -21,6 +21,8 @@ import {
 import { Canvas } from '@react-three/fiber';
 import { Preload } from '@react-three/drei';
 
+import NebulaBackground from './scene/NebulaBackground';
+import StarField from './scene/StarField';
 import VolumetricFog from './scene/VolumetricFog';
 import SceneLighting from './scene/SceneLighting';
 import NeuralNetwork from './NeuralNetwork';
@@ -138,9 +140,8 @@ export default function NeuralScene() {
           <color attach="background" args={['#04050E']} />
 
           <Suspense fallback={null}>
-            {/* Scene layers:                                                */}
-            {/* <NebulaBackground />  Task  9 — shader-driven nebula plane   */}
-            {/* <StarField />         Task 10 — 3-plane parallax stars       */}
+            <NebulaBackground />
+            <StarField />
             <VolumetricFog />
             <SceneLighting />
             <NeuralNetwork />

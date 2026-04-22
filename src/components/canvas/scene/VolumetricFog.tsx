@@ -29,5 +29,6 @@ export default function VolumetricFog({
   density = 0.005,
   color = '#04050E',
 }: VolumetricFogProps = {}) {
-  return <fogExp2 attach="fog" color={color} density={density} />;
+  // R3F 9 requires `args` on primitive JSX; FogExp2 constructor is (color, density).
+  return <fogExp2 attach="fog" args={[color, density]} />;
 }

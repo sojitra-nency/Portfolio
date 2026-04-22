@@ -10,6 +10,7 @@ const nextConfig = {
       '*.frag': { loaders: ['raw-loader'], as: '*.js' },
     },
   },
+
   // Webpack fallback — used when `next build --webpack` is passed
   // explicitly. Mirrors the Turbopack rule above using webpack 5's
   // built-in `asset/source` type (no extra loader needed).

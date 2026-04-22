@@ -42,7 +42,6 @@ export const connections: NeuralConnection[] = [
   { id: 'c-proj-opinio', sourceId: 'projects', targetId: 'proj-opinio', type: 'primary', strength: 0.7 },
   { id: 'c-proj-scalequest', sourceId: 'projects', targetId: 'proj-scalequest', type: 'primary', strength: 0.7 },
   { id: 'c-proj-sentiment', sourceId: 'projects', targetId: 'proj-sentiment', type: 'primary', strength: 0.7 },
-  { id: 'c-proj-nexus', sourceId: 'projects', targetId: 'proj-neural-nexus', type: 'primary', strength: 0.8 },
   { id: 'c-proj-twiititude', sourceId: 'projects', targetId: 'proj-twiititude', type: 'primary', strength: 0.7 },
   { id: 'c-proj-snakegame', sourceId: 'projects', targetId: 'proj-snakegame', type: 'primary', strength: 0.6 },
 
@@ -90,9 +89,6 @@ export const connections: NeuralConnection[] = [
   { id: 'x-opinio-python', sourceId: 'proj-opinio', targetId: 'tool-python', type: 'cross-domain', strength: 0.7 },
   { id: 'x-opinio-ai', sourceId: 'proj-opinio', targetId: 'skill-ai', type: 'cross-domain', strength: 0.7 },
   { id: 'x-sentiment-python', sourceId: 'proj-sentiment', targetId: 'tool-python', type: 'cross-domain', strength: 0.7 },
-  { id: 'x-nexus-nextjs', sourceId: 'proj-neural-nexus', targetId: 'tool-nextjs', type: 'cross-domain', strength: 0.8 },
-  { id: 'x-nexus-ts', sourceId: 'proj-neural-nexus', targetId: 'tool-typescript', type: 'cross-domain', strength: 0.8 },
-
   // ─── Cross-domain: Experience → Skills ───
   { id: 'x-lanet-langs', sourceId: 'exp-lanet', targetId: 'skill-langs', type: 'cross-domain', strength: 0.9 },
   { id: 'x-lanet-db', sourceId: 'exp-lanet', targetId: 'skill-db', type: 'cross-domain', strength: 0.8 },

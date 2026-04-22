@@ -74,6 +74,7 @@ interface SimLink {
 export default function useForceLayout(): void {
   useEffect(() => {
     const { nodes, connections, setPosition } = useGraphStore.getState();
+    const nodeIds = new Set(nodes.map((node) => node.id));
 
     // Build sim nodes with random initial positions on a sphere shell.
     const simNodes: SimNode[] = nodes.map((node) => {
@@ -90,10 +91,26 @@ export default function useForceLayout(): void {
       };
     });
 
-    const simLinks: SimLink[] = connections.map((c) => ({
-      source: c.sourceId,
-      target: c.targetId,
-    }));
+    const simLinks: SimLink[] = connections.flatMap((connection) => {
+      const hasSource = nodeIds.has(connection.sourceId);
+      const hasTarget = nodeIds.has(connection.targetId);
+
+      if (!hasSource || !hasTarget) {
+        console.warn('[useForceLayout] Skipping connection with missing node reference.', {
+          connectionId: connection.id,
+          sourceId: connection.sourceId,
+          targetId: connection.targetId,
+        });
+        return [];
+      }
+
+      return [
+        {
+          source: connection.sourceId,
+          target: connection.targetId,
+        },
+      ];
+    });
 
     const simulation = forceSimulation<SimNode>(simNodes, 3)
       .force('charge', forceManyBody<SimNode>().strength(-120))

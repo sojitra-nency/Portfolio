@@ -9,6 +9,8 @@ import CornerHUD from '@/components/hud/CornerHUD';
 import CoherenceMeter from '@/components/hud/CoherenceMeter';
 import NeuralMap from '@/components/hud/NeuralMap';
 import DetailCard from '@/components/hud/DetailCard';
+import CommTooltip from '@/components/hud/CommTooltip';
+import KeyCheatSheet from '@/components/hud/KeyCheatSheet';
 import { useHudStore } from '@/store/useHudStore';
 
 /**
@@ -49,6 +51,8 @@ export default function Home() {
           <CoherenceMeter />
           <NeuralMap />
           <DetailCard />
+          <CommTooltip />
+          <KeyCheatSheet />
         </>
       )}
     </main>

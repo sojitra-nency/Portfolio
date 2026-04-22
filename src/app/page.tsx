@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 
 import useResponsive from '@/hooks/useResponsive';
 import useKeyboardNav from '@/hooks/useKeyboardNav';
+import useAudio from '@/hooks/useAudio';
 import BootSequence from '@/components/hud/BootSequence';
 import CornerHUD from '@/components/hud/CornerHUD';
 import CoherenceMeter from '@/components/hud/CoherenceMeter';
@@ -35,6 +36,7 @@ const NeuralScene = dynamic(
 export default function Home() {
   useResponsive();
   useKeyboardNav();
+  useAudio();
   const isBootComplete = useHudStore((s) => s.isBootComplete);
 
   return (

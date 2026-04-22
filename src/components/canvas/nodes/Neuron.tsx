@@ -33,6 +33,7 @@ import { CATEGORY_COLORS } from '@/data/types';
 import type { NeuralNode, NodeLevel } from '@/data/types';
 import { fire, preFire, registerPulse } from '@/hooks/useChainReaction';
 import { registerVelocity } from '@/hooks/usePointerMagnetism';
+import { playFX } from '@/hooks/useAudio';
 
 import NeuronCore from './NeuronCore';
 import NeuronHalo from './NeuronHalo';
@@ -131,6 +132,7 @@ function Neuron({ node }: NeuronProps) {
       hover(node.id);
       // Shimmer 1-hop neighbors (no cascade) — cancels any in-flight event.
       preFire(node.id);
+      playFX('hover-blip');
     },
     [hover, node.id],
   );
@@ -152,6 +154,8 @@ function Neuron({ node }: NeuronProps) {
       fire(node.id);
       // Cinema focus — CinemaCamera lerps to the node.
       focusOn(node.id);
+      playFX('select-chime');
+      playFX('fire-whoosh');
     },
     [activate, focusOn, node.id],
   );

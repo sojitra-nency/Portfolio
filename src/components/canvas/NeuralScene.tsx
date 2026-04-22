@@ -21,6 +21,9 @@ import {
 import { Canvas } from '@react-three/fiber';
 import { Preload } from '@react-three/drei';
 
+import VolumetricFog from './scene/VolumetricFog';
+import SceneLighting from './scene/SceneLighting';
+
 // ---------------------------------------------------------------------------
 // Error boundary — catches render/init failures inside <Canvas>.
 // ---------------------------------------------------------------------------
@@ -132,11 +135,11 @@ export default function NeuralScene() {
           <color attach="background" args={['#04050E']} />
 
           <Suspense fallback={null}>
-            {/* Scene layers — populated by later tasks:                     */}
+            {/* Scene layers:                                                */}
             {/* <NebulaBackground />  Task  9 — shader-driven nebula plane   */}
             {/* <StarField />         Task 10 — 3-plane parallax stars       */}
-            {/* <VolumetricFog />     Task 11 — exp2 depth fog               */}
-            {/* <SceneLighting />     Task 11 — ambient + 2 point lights     */}
+            <VolumetricFog />
+            <SceneLighting />
             {/* <NeuralNetwork />     Task 16 — nodes + connections          */}
             {/* <CinemaCamera />      Task 20 — ambient/focus/tour camera    */}
             {/* <EffectsStack />      Task 21 — bloom, DOF, chromatic, etc.  */}

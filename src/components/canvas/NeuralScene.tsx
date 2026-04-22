@@ -24,6 +24,8 @@ import { Preload } from '@react-three/drei';
 import VolumetricFog from './scene/VolumetricFog';
 import SceneLighting from './scene/SceneLighting';
 import NeuralNetwork from './NeuralNetwork';
+import CinemaCamera from './camera/CinemaCamera';
+import EffectsStack from './postprocessing/EffectsStack';
 
 // ---------------------------------------------------------------------------
 // Error boundary — catches render/init failures inside <Canvas>.
@@ -142,8 +144,8 @@ export default function NeuralScene() {
             <VolumetricFog />
             <SceneLighting />
             <NeuralNetwork />
-            {/* <CinemaCamera />      Task 20 — ambient/focus/tour camera    */}
-            {/* <EffectsStack />      Task 21 — bloom, DOF, chromatic, etc.  */}
+            <CinemaCamera />
+            <EffectsStack />
 
             <Preload all />
           </Suspense>

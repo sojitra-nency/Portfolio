@@ -9,26 +9,27 @@
  *   slice of state changes.
  * - Compose `NeuronCore` (body) + `NeuronHalo` (glow) + `<Html>` label,
  *   positioned at the node's world coordinates.
- * - Own the shared `pulseRef` — a single `MutableRefObject<number>` read
- *   every frame by both core and halo materials. On click this neuron
- *   fires a local 60 ms eased pulse; Task 19 will extend this to multi-hop
- *   chain reactions.
- * - Wire pointer events → graph store actions.
+ * - Own a `pulseRef` — the shared `MutableRefObject<number>` read every
+ *   frame by both core and halo materials. The ref is published to
+ *   `useChainReaction`'s central registry so `fire()` / `preFire()` can
+ *   write into it across the graph.
+ * - Pointer handlers translate into graph-store actions **and** chain-
+ *   reaction events: click → `fire(id)`, hover-enter → `preFire(id)`.
  *
  * Wrapped in `React.memo` so a parent re-render with the same `node` ref
  * doesn't recreate subtrees. Per-neuron state changes still propagate
  * through the store subscriptions inside.
  */
 
-import { memo, useCallback, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 
 import { useGraphStore } from '@/store/useGraphStore';
+import { useCinemaStore } from '@/store/useCinemaStore';
 import { CATEGORY_COLORS } from '@/data/types';
 import type { NeuralNode, NodeLevel } from '@/data/types';
-import { FIRE_FLASH } from '@/lib/neural-motion';
+import { fire, preFire, registerPulse } from '@/hooks/useChainReaction';
 
 import NeuronCore from './NeuronCore';
 import NeuronHalo from './NeuronHalo';
@@ -66,12 +67,16 @@ function Neuron({ node }: NeuronProps) {
   // Stable action refs (Zustand doesn't recreate actions).
   const hover = useGraphStore((s) => s.hover);
   const activate = useGraphStore((s) => s.activate);
+  const focusOn = useCinemaStore((s) => s.focusOn);
 
   // Shared pulse envelope read by NeuronCore + NeuronHalo every frame.
+  // Written centrally by `useChainReaction`'s useFrame (Task 19).
   const pulseRef = useRef<number>(0);
-  // When non-null, a click-fire is in progress; value is `performance.now()/1000`
-  // at the moment of the click.
-  const fireStartRef = useRef<number | null>(null);
+
+  // Publish our pulse ref to the chain-reaction registry on mount.
+  useEffect(() => {
+    return registerPulse(node.id, pulseRef);
+  }, [node.id]);
 
   // Cached geometry for this node's category. Shared across all neurons
   // of the same category — geometryFor memoizes.
@@ -86,22 +91,6 @@ function Neuron({ node }: NeuronProps) {
   const state = isActive ? 1 : isHovered ? 0.6 : 0;
   const showLabel = node.level <= 1 || isHovered || isActive;
 
-  // Drive the click-pulse bell curve in the render loop. Sine bell over
-  // FIRE_FLASH (60 ms) — peaks at t = 0.5, returns to 0 at t = 1. Task 19
-  // will replace this with the chain-reaction hook.
-  useFrame(() => {
-    const start = fireStartRef.current;
-    if (start === null) return;
-    const elapsed = performance.now() / 1000 - start;
-    if (elapsed >= FIRE_FLASH) {
-      pulseRef.current = 0;
-      fireStartRef.current = null;
-      return;
-    }
-    const t = elapsed / FIRE_FLASH;
-    pulseRef.current = Math.sin(t * Math.PI);
-  });
-
   // ── Pointer handlers ────────────────────────────────────────────────────
 
   const onPointerOver = useCallback(
@@ -109,6 +98,8 @@ function Neuron({ node }: NeuronProps) {
       e.stopPropagation();
       document.body.style.cursor = 'pointer';
       hover(node.id);
+      // Shimmer 1-hop neighbors (no cascade) — cancels any in-flight event.
+      preFire(node.id);
     },
     [hover, node.id],
   );
@@ -126,10 +117,12 @@ function Neuron({ node }: NeuronProps) {
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
       activate(node.id);
-      // Kick off the local fire envelope.
-      fireStartRef.current = performance.now() / 1000;
+      // Full chain reaction: source + 1-hop + 2-hop waves.
+      fire(node.id);
+      // Cinema focus — CinemaCamera lerps to the node.
+      focusOn(node.id);
     },
-    [activate, node.id],
+    [activate, focusOn, node.id],
   );
 
   // Force layout still settling — skip render until a position is written.

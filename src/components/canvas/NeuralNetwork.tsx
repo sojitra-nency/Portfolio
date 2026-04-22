@@ -18,12 +18,17 @@
 import { useMemo } from 'react';
 
 import useForceLayout from '@/hooks/useForceLayout';
+import useChainReaction from '@/hooks/useChainReaction';
 import { useGraphStore } from '@/store/useGraphStore';
 import Neuron from './nodes/Neuron';
 import ConnectionsLayer from './connections/ConnectionsLayer';
 
 export default function NeuralNetwork() {
   useForceLayout();
+  // Centralised pulse orchestration — single useFrame that writes into
+  // every registered neuron's pulseRef. Mounted once here so individual
+  // Neuron components don't each register their own useFrame.
+  useChainReaction();
 
   // Re-derive the visible set when the expanded-cluster set changes. The
   // store's `nodes` array is immutable post-seed, so no other dependency

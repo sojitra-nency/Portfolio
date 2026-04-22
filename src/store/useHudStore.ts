@@ -12,6 +12,13 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
+/**
+ * Duration (in seconds) of the chromatic-aberration spike triggered by
+ * `chromaticSpike()`. Consumed by the EffectsStack to decay the offset
+ * back to baseline.
+ */
+export const CHROMATIC_SPIKE_DURATION = 0.2;
+
 export interface HudState {
   /** True once the BootSequence overlay has dismissed. Other HUD pieces
    * wait for this flag before entering. */
@@ -24,12 +31,19 @@ export interface HudState {
   isTourActive: boolean;
   /** Text shown in the CommTooltip pill, or `null` to hide it. */
   commTooltipText: string | null;
+  /** `performance.now() / 1000` when the current chromatic spike ends, or
+   * `0` if no spike is active. Read by EffectsStack each frame to
+   * animate the ChromaticAberration offset. */
+  chromaticSpikeEndAt: number;
 
   setBootComplete: (value: boolean) => void;
   setDetailOpen: (value: boolean) => void;
   setCheatSheetOpen: (value: boolean) => void;
   setTourActive: (value: boolean) => void;
   setCommTooltipText: (value: string | null) => void;
+  /** Trigger a brief chromatic-aberration pulse — typically wired to
+   * chain-reaction fire events for a "signal shock" feel. */
+  chromaticSpike: () => void;
 }
 
 export const useHudStore = create<HudState>()(
@@ -39,11 +53,17 @@ export const useHudStore = create<HudState>()(
     isCheatSheetOpen: false,
     isTourActive: false,
     commTooltipText: null,
+    chromaticSpikeEndAt: 0,
 
     setBootComplete: (value) => set({ isBootComplete: value }),
     setDetailOpen: (value) => set({ isDetailOpen: value }),
     setCheatSheetOpen: (value) => set({ isCheatSheetOpen: value }),
     setTourActive: (value) => set({ isTourActive: value }),
     setCommTooltipText: (value) => set({ commTooltipText: value }),
+    chromaticSpike: () =>
+      set({
+        chromaticSpikeEndAt:
+          performance.now() / 1000 + CHROMATIC_SPIKE_DURATION,
+      }),
   })),
 );

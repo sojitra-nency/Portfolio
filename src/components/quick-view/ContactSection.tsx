@@ -1,8 +1,18 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { scaleIn, staggerContainer, viewportConfig, fadeInUp } from '@/lib/animations';
+import {
+  scaleIn,
+  staggerContainer,
+  viewportConfig,
+  fadeInUp,
+  cardLift,
+  iconPop,
+  arrowSlide,
+} from '@/lib/animations';
 import type { NeuralNode } from '@/data/types';
+
+const ACCENT = '#FFD700';
 
 interface ContactSectionProps {
   nodes: NeuralNode[];
@@ -90,7 +100,7 @@ export default function ContactSection({
         <h2 className="text-3xl sm:text-4xl font-bold font-[var(--font-syne)] text-white">
           Let&apos;s Build Something Together
         </h2>
-        <p className="text-sm text-gray-500 mt-2">{subtitle}</p>
+        <p className="text-sm text-gray-400 mt-2">{subtitle}</p>
       </motion.div>
 
       {/* Contact Cards */}
@@ -101,36 +111,97 @@ export default function ContactSection({
         whileInView="visible"
         viewport={viewportConfig}
       >
-        {nodes.map((node) => (
-          <motion.div
-            key={node.id}
-            variants={scaleIn}
-            className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-5 hover:border-white/[0.1] hover:bg-white/[0.03] transition-all duration-300 text-center"
-          >
-            <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mx-auto mb-3 text-white">
-              {ICONS[node.label] ?? null}
-            </div>
-            <h3 className="text-[15px] font-semibold text-white mb-1">
-              {node.label}
-            </h3>
-            <p className="text-xs text-gray-400 mb-2">{node.summary}</p>
-            {node.metadata?.url ? (
-              <a
-                href={node.metadata.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-medium hover:underline"
-                style={{ color: '#FFD700' }}
+        {nodes.map((node) => {
+          const url = node.metadata?.url;
+          const linkText = getLinkText(node.label);
+
+          const cardBody = (
+            <motion.div
+              // Nested hover state — decoupled from parent's scroll-in variants.
+              variants={cardLift}
+              initial="rest"
+              animate="rest"
+              whileHover="hover"
+              className="relative bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 transition-colors duration-300 group-hover:bg-white/[0.04] group-hover:border-white/[0.12] text-center will-change-transform overflow-hidden"
+            >
+              {/* Gold glow ring — fades in on hover */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{
+                  boxShadow: `0 0 0 1px ${ACCENT}33, 0 14px 40px -12px ${ACCENT}40`,
+                }}
+              />
+
+              {/* Subtle top-edge gradient sweep on hover */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: `linear-gradient(90deg, transparent, ${ACCENT}80, transparent)`,
+                }}
+              />
+
+              <motion.div
+                variants={iconPop}
+                className="relative w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto mb-3 text-white transition-colors duration-300 group-hover:text-[#FFD700] group-hover:border-[#FFD700]/30"
               >
-                {getLinkText(node.label)}
-              </a>
-            ) : (
-              <span className="text-xs font-medium" style={{ color: '#FFD700' }}>
-                {getLinkText(node.label)}
-              </span>
-            )}
-          </motion.div>
-        ))}
+                {ICONS[node.label] ?? null}
+              </motion.div>
+
+              <h3 className="relative text-[15px] font-semibold text-white mb-1">
+                {node.label}
+              </h3>
+              <p className="relative text-xs text-gray-400 mb-2">{node.summary}</p>
+
+              <motion.span
+                variants={arrowSlide}
+                className="relative inline-flex items-center gap-1 text-xs font-medium"
+                style={{ color: ACCENT }}
+              >
+                {linkText}
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M5 12h14" />
+                  <path d="M13 6l6 6-6 6" />
+                </svg>
+              </motion.span>
+            </motion.div>
+          );
+
+          // Outer wrapper only handles scroll-in (scaleIn) and inherits
+          // "hidden"/"visible" from the parent staggerContainer. Hover is
+          // handled by the nested cardBody above.
+          const wrapperProps = {
+            variants: scaleIn,
+            className: 'group block',
+          };
+
+          return url ? (
+            <motion.a
+              key={node.id}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              {...wrapperProps}
+            >
+              {cardBody}
+            </motion.a>
+          ) : (
+            <motion.div key={node.id} {...wrapperProps}>
+              {cardBody}
+            </motion.div>
+          );
+        })}
       </motion.div>
 
       {/* Primary CTA Button */}
@@ -142,26 +213,54 @@ export default function ContactSection({
           whileInView="visible"
           viewport={viewportConfig}
         >
-          <a
+          <motion.a
             href={emailNode.metadata.url}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold text-[#0A0A1A] transition-all duration-300 hover:brightness-110 hover:scale-[1.02]"
+            initial="rest"
+            animate="rest"
+            whileHover="hover"
+            whileTap={{ scale: 0.97 }}
+            className="group relative inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold text-[#0A0A1A] overflow-hidden shadow-[0_8px_30px_-8px_rgba(255,215,0,0.5)]"
             style={{
               background: 'linear-gradient(135deg, #FFD700, #FFA500)',
             }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="M22 4L12 13L2 4" />
-            </svg>
-            Send Email
-          </a>
+            {/* Shimmer sweep on hover */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg] opacity-0 group-hover:opacity-100 group-hover:left-[150%] transition-all duration-700 ease-out"
+            />
+            <motion.span variants={iconPop} className="relative flex">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M22 4L12 13L2 4" />
+              </svg>
+            </motion.span>
+            <span className="relative">Send Email</span>
+            <motion.span variants={arrowSlide} className="relative flex">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M5 12h14" />
+                <path d="M13 6l6 6-6 6" />
+              </svg>
+            </motion.span>
+          </motion.a>
         </motion.div>
       )}
     </section>

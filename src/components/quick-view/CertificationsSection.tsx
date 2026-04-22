@@ -1,7 +1,14 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { scaleIn, fadeInUp, staggerContainer, viewportConfig } from '@/lib/animations';
+import {
+  scaleIn,
+  fadeInUp,
+  staggerContainer,
+  viewportConfig,
+  cardLift,
+  iconPop,
+} from '@/lib/animations';
 import SectionHeading from '@/components/quick-view/SectionHeading';
 
 interface Certification {
@@ -111,10 +118,13 @@ export default function CertificationsSection() {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: group.color }}
               />
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-[0.1em]">
+              <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-[0.1em]">
                 {group.label}
               </h3>
-              <span className="text-[10px] text-gray-600 font-[var(--font-mono)]">
+              <span
+                className="text-[10px] font-[var(--font-mono)]"
+                style={{ color: `${group.color}b0` }}
+              >
                 ({group.certs.length})
               </span>
             </div>
@@ -131,32 +141,60 @@ export default function CertificationsSection() {
                 <motion.div
                   key={cert.name}
                   variants={scaleIn}
-                  className="group flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] rounded-xl px-4 py-3.5 hover:border-white/[0.1] hover:bg-white/[0.03] transition-all duration-300"
+                  className="group relative overflow-hidden"
                 >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:rotate-[15deg]"
+                  <motion.div
+                    variants={cardLift}
+                    initial="rest"
+                    animate="rest"
+                    whileHover="hover"
+                    className="relative flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] rounded-xl px-4 py-3.5 transition-colors duration-300 group-hover:bg-white/[0.04] will-change-transform"
                     style={{
-                      color: group.color,
-                      backgroundColor: `${group.color}10`,
-                      border: `1px solid ${group.color}15`,
+                      // Color-tinted border + glow driven by CSS vars for perf
+                      ['--cert-color' as string]: group.color,
                     }}
                   >
-                    <IssuerIcon issuer={cert.issuer} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] text-white font-medium leading-tight truncate">
-                      {cert.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-gray-500">{cert.platform || cert.issuer}</span>
-                      {cert.date && (
-                        <>
-                          <span className="text-[10px] text-gray-700">·</span>
-                          <span className="text-[10px] text-gray-600 font-[var(--font-mono)]">{cert.date}</span>
-                        </>
-                      )}
+                    {/* Color-tinted glow ring — shows only on hover */}
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{
+                        boxShadow: `0 0 0 1px ${group.color}33, 0 8px 24px -8px ${group.color}40`,
+                      }}
+                    />
+
+                    <motion.div
+                      variants={iconPop}
+                      className="relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{
+                        color: group.color,
+                        backgroundColor: `${group.color}18`,
+                        border: `1px solid ${group.color}30`,
+                      }}
+                    >
+                      <IssuerIcon issuer={cert.issuer} />
+                    </motion.div>
+
+                    <div className="relative min-w-0 flex-1">
+                      <p className="text-[13px] text-white font-medium leading-tight truncate">
+                        {cert.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-gray-400">{cert.platform || cert.issuer}</span>
+                        {cert.date && (
+                          <>
+                            <span
+                              className="text-[10px]"
+                              style={{ color: `${group.color}80` }}
+                            >
+                              ·
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-[var(--font-mono)]">{cert.date}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </motion.div>
               ))}
             </motion.div>

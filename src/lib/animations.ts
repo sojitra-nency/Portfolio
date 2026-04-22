@@ -91,6 +91,36 @@ export const cardHover: Variants = {
   },
 };
 
+// Parent/child pair for interactive cards: parent handles lift+scale,
+// children (icons, arrows) react with independent motion via `iconPop`.
+// Drive both with `whileHover="hover"` on the parent.
+export const cardLift: Variants = {
+  rest: {
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.35, ease: EASE_OUT_EXPO },
+  },
+  hover: {
+    y: -6,
+    scale: 1.015,
+    transition: { duration: 0.35, ease: EASE_OUT_EXPO },
+  },
+};
+
+export const iconPop: Variants = {
+  rest: { scale: 1, rotate: 0, transition: { duration: 0.3, ease: EASE_OUT_EXPO } },
+  hover: {
+    scale: 1.12,
+    rotate: -6,
+    transition: { duration: 0.35, ease: EASE_OUT_EXPO },
+  },
+};
+
+export const arrowSlide: Variants = {
+  rest: { x: 0, transition: { duration: 0.25, ease: EASE_OUT_EXPO } },
+  hover: { x: 4, transition: { duration: 0.25, ease: EASE_OUT_EXPO } },
+};
+
 // ---------------------------------------------------------------------------
 // 5. Glow hover factory (dynamic color)
 // ---------------------------------------------------------------------------
@@ -154,25 +184,29 @@ export const heroItem: Variants = {
 // ---------------------------------------------------------------------------
 
 /**
- * Animates a number from 0 to `target` over `duration` ms once the
- * returned ref's element scrolls into view.
+ * Animates a number from 0 to `target` over `duration` ms. Pass `decimals > 0`
+ * for fractional targets (e.g. CGPA 8.96). Caller is responsible for gating
+ * visibility — pair with framer-motion's `useInView` to defer until the
+ * element is scrolled into view.
  *
- * Usage:
  * ```tsx
  * const ref = useRef(null);
- * const count = useCountUp(42, 1500);
- * // attach ref to the element wrapping the number
+ * const inView = useInView(ref, { once: true });
+ * const count = useCountUp(inView ? 8.96 : 0, 1500, 2);
  * ```
  */
-export function useCountUp(target: number, duration = 1500): number {
+export function useCountUp(
+  target: number,
+  duration = 1500,
+  decimals = 0,
+): number {
   const [count, setCount] = useState(0);
   const [hasAnimated, setHasAnimated] = useState(false);
   useEffect(() => {
-    if (hasAnimated) return;
+    if (hasAnimated || target === 0) return;
 
-    // Start animation immediately (caller is responsible for triggering
-    // visibility — this keeps the hook simple and SSR-safe).
     const start = performance.now();
+    const factor = decimals > 0 ? Math.pow(10, decimals) : 1;
 
     let frameId: number;
 
@@ -181,7 +215,8 @@ export function useCountUp(target: number, duration = 1500): number {
       const progress = Math.min(elapsed / duration, 1);
       // ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.round(eased * target));
+      const value = eased * target;
+      setCount(decimals > 0 ? Math.round(value * factor) / factor : Math.round(value));
 
       if (progress < 1) {
         frameId = requestAnimationFrame(step);
@@ -193,7 +228,7 @@ export function useCountUp(target: number, duration = 1500): number {
     frameId = requestAnimationFrame(step);
 
     return () => cancelAnimationFrame(frameId);
-  }, [target, duration, hasAnimated]);
+  }, [target, duration, decimals, hasAnimated]);
 
   return count;
 }

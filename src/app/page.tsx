@@ -3,6 +3,7 @@
 import useResponsive from '@/hooks/useResponsive';
 import useKeyboardNav from '@/hooks/useKeyboardNav';
 import BootSequence from '@/components/hud/BootSequence';
+import CornerHUD from '@/components/hud/CornerHUD';
 import { useHudStore } from '@/store/useHudStore';
 
 /**
@@ -26,7 +27,8 @@ export default function Home() {
       className="relative w-full h-screen overflow-hidden bg-[var(--void)]"
     >
       {!isBootComplete && <BootSequence />}
-      {/* Scene + HUDs mount here in later tasks. */}
+      {isBootComplete && <CornerHUD />}
+      {/* NeuralScene + remaining HUDs mount here in later tasks. */}
     </main>
   );
 }

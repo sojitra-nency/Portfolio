@@ -49,11 +49,18 @@ export interface NeuronCoreProps {
   /** Activation state: 0 = idle, 1 = active. Drives the steady brightness
    * multiplier. */
   state: number;
-  /** Node radius in world units — passed to `icosahedronGeometry` so the
-   * geometry itself is sized correctly, no mesh-scale math needed. */
+  /** Node radius in world units. Applied as mesh scale when an external
+   * `geometry` is supplied; baked into the fallback icosahedron otherwise. */
   size: number;
-  /** Icosahedron subdivision detail (0 = 20 tris, 1 = 80, 2 = 320). The
-   * parent `Neuron` derives this from `node.level`. */
+  /**
+   * Optional pre-built geometry — typically the cached per-category
+   * result from `geometryFor()` in `./geometries.ts`. When provided, the
+   * mesh scales to `size` and attaches this geometry. When omitted,
+   * falls back to a built-in icosahedron sized by `size` + `detail`.
+   */
+  geometry?: THREE.BufferGeometry;
+  /** Icosahedron subdivision detail (0 = 20 tris, 1 = 80, 2 = 320). Only
+   * used when no `geometry` prop is passed. */
   detail?: number;
   /** Override for the surface-displacement amplitude. Defaults to 0.08. */
   noiseAmp?: number;
@@ -64,6 +71,7 @@ export default function NeuronCore({
   pulseRef,
   state,
   size,
+  geometry,
   detail = 1,
   noiseAmp = 0.08,
 }: NeuronCoreProps) {
@@ -103,6 +111,19 @@ export default function NeuronCore({
     material.uniforms.uPulse.value = pulseRef.current;
   });
 
+  // External geometry path — cached per-category from `geometryFor`.
+  // `dispose={null}` on the primitive prevents R3F from disposing a
+  // shared geometry when this mesh unmounts.
+  if (geometry) {
+    return (
+      <mesh scale={size}>
+        <primitive object={geometry} attach="geometry" dispose={null} />
+        <primitive object={material} attach="material" />
+      </mesh>
+    );
+  }
+
+  // Fallback: built-in icosahedron sized via geometry args.
   return (
     <mesh>
       <icosahedronGeometry args={[size, detail]} />

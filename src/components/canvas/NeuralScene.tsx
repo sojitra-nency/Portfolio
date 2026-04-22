@@ -23,6 +23,7 @@ import { Preload } from '@react-three/drei';
 
 import VolumetricFog from './scene/VolumetricFog';
 import SceneLighting from './scene/SceneLighting';
+import NeuralNetwork from './NeuralNetwork';
 
 // ---------------------------------------------------------------------------
 // Error boundary — catches render/init failures inside <Canvas>.
@@ -140,7 +141,7 @@ export default function NeuralScene() {
             {/* <StarField />         Task 10 — 3-plane parallax stars       */}
             <VolumetricFog />
             <SceneLighting />
-            {/* <NeuralNetwork />     Task 16 — nodes + connections          */}
+            <NeuralNetwork />
             {/* <CinemaCamera />      Task 20 — ambient/focus/tour camera    */}
             {/* <EffectsStack />      Task 21 — bloom, DOF, chromatic, etc.  */}
 

@@ -5,6 +5,9 @@ import dynamic from 'next/dynamic';
 import useResponsive from '@/hooks/useResponsive';
 import useKeyboardNav from '@/hooks/useKeyboardNav';
 import useAudio from '@/hooks/useAudio';
+import useGuidedTour from '@/hooks/useGuidedTour';
+import useIdleCuriosity from '@/hooks/useIdleCuriosity';
+import useEasterEggs from '@/hooks/useEasterEggs';
 import BootSequence from '@/components/hud/BootSequence';
 import CornerHUD from '@/components/hud/CornerHUD';
 import CoherenceMeter from '@/components/hud/CoherenceMeter';
@@ -38,6 +41,9 @@ export default function Home() {
   useResponsive();
   useKeyboardNav();
   useAudio();
+  useGuidedTour();
+  useIdleCuriosity();
+  useEasterEggs();
   const isBootComplete = useHudStore((s) => s.isBootComplete);
 
   return (

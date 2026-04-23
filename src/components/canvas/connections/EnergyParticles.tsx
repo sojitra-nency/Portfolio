@@ -20,12 +20,16 @@ import { useFrame } from '@react-three/fiber';
 import { getGPUTier } from 'detect-gpu';
 import * as THREE from 'three';
 
+import { useHudStore } from '@/store/useHudStore';
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
-const MAX_PARTICLES = 6;
-const INACTIVE_COUNT = 3;
+const MAX_PARTICLES_DESKTOP = 6;
+const INACTIVE_COUNT_DESKTOP = 3;
+const MAX_PARTICLES_MOBILE = 3;
+const INACTIVE_COUNT_MOBILE = 1;
 const SPEED_INACTIVE = 0.3;
 const SPEED_ACTIVE = 0.6;
 const POINT_SIZE = 0.22;
@@ -68,24 +72,33 @@ export default function EnergyParticles({
   color,
 }: EnergyParticlesProps) {
   const tier = useGPUTier();
+  const isMobile = useHudStore((s) => s.isMobile);
   const skip = tier <= 1;
 
-  // Evenly-phased offsets along [0, 1). Spread across all 6 slots so the
+  // Mobile halves the particle budget: 1 per idle edge, 3 when active.
+  const maxParticles = isMobile
+    ? MAX_PARTICLES_MOBILE
+    : MAX_PARTICLES_DESKTOP;
+  const inactiveCount = isMobile
+    ? INACTIVE_COUNT_MOBILE
+    : INACTIVE_COUNT_DESKTOP;
+
+  // Evenly-phased offsets along [0, 1). Spread across all slots so the
   // "hidden" particles are already in motion when `active` flips on.
   const offsets = useMemo(() => {
-    const arr = new Float32Array(MAX_PARTICLES);
-    for (let i = 0; i < MAX_PARTICLES; i++) arr[i] = i / MAX_PARTICLES;
+    const arr = new Float32Array(maxParticles);
+    for (let i = 0; i < maxParticles; i++) arr[i] = i / maxParticles;
     return arr;
-  }, []);
+  }, [maxParticles]);
 
-  // Pre-allocated points buffer — 6 positions × 3 floats = 72 bytes total.
+  // Pre-allocated points buffer sized for the effective max.
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(MAX_PARTICLES * 3);
+    const positions = new Float32Array(maxParticles * 3);
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setDrawRange(0, INACTIVE_COUNT);
+    geo.setDrawRange(0, inactiveCount);
     return geo;
-  }, []);
+  }, [maxParticles, inactiveCount]);
 
   const material = useMemo(
     () =>
@@ -108,8 +121,8 @@ export default function EnergyParticles({
 
   // Flip draw range when active toggles.
   useEffect(() => {
-    geometry.setDrawRange(0, active ? MAX_PARTICLES : INACTIVE_COUNT);
-  }, [active, geometry]);
+    geometry.setDrawRange(0, active ? maxParticles : inactiveCount);
+  }, [active, geometry, maxParticles, inactiveCount]);
 
   // Per-instance scratch vector avoids churn inside useFrame.
   const scratch = useMemo(() => new THREE.Vector3(), []);
@@ -128,7 +141,7 @@ export default function EnergyParticles({
     const attr = geometry.attributes.position as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
     const speed = active ? SPEED_ACTIVE : SPEED_INACTIVE;
-    const count = active ? MAX_PARTICLES : INACTIVE_COUNT;
+    const count = active ? maxParticles : inactiveCount;
 
     for (let i = 0; i < count; i++) {
       let t = offsets[i] + speed * delta;

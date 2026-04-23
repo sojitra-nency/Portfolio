@@ -20,17 +20,16 @@
  * EnergyParticles — Task 23 folds all three into `useResponsive`.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
   EffectComposer,
   SelectiveBloom,
   DepthOfField,
-  ChromaticAberration,
   Noise,
   Vignette,
 } from '@react-three/postprocessing';
-import { BlendFunction, type ChromaticAberrationEffect } from 'postprocessing';
+import { BlendFunction, ChromaticAberrationEffect } from 'postprocessing';
 import { getGPUTier } from 'detect-gpu';
 import * as THREE from 'three';
 
@@ -82,9 +81,11 @@ function useGPUTier(): number {
 
 export default function EffectsStack() {
   const tier = useGPUTier();
+  const scene = useThree((s) => s.scene);
   const isMobile = useThree((s) => s.size.width < MOBILE_BREAKPOINT);
   const mode = useCinemaStore((s) => s.mode);
   const focusTarget = useCinemaStore((s) => s.focusTarget);
+  const [hasSceneLights, setHasSceneLights] = useState(false);
 
   // Stable fallback target for DoF when nothing is focused — mutated
   // never, so DepthOfField reuses the same Vector3 across re-renders.
@@ -93,16 +94,22 @@ export default function EffectsStack() {
 
   // Ref to the underlying ChromaticAberrationEffect so we can mutate
   // its offset uniform each frame without triggering React re-renders.
-  // The library's type declares the ref as `typeof ChromaticAberrationEffect`
-  // (a class constructor) — this is a type-declaration quirk; the runtime
-  // ref is actually the effect instance. Cast with `as unknown`.
-  const chromaticRef = useRef<ChromaticAberrationEffect>(null);
+  // We instantiate the effect directly instead of using the
+  // <ChromaticAberration /> wrapper because that wrapper stringifies props;
+  // in React 19, passing `ref` as a prop can produce a cyclic object error.
+  const chromaticEffect = useMemo(
+    () =>
+      new ChromaticAberrationEffect({
+        offset: new THREE.Vector2(CHROMATIC_BASE, CHROMATIC_BASE),
+        radialModulation: false,
+        modulationOffset: 0,
+      }),
+    [],
+  );
 
   // Animate chromatic offset: decays from CHROMATIC_PEAK → CHROMATIC_BASE
   // over CHROMATIC_SPIKE_DURATION after `useHudStore.chromaticSpike()`.
   useFrame(() => {
-    const eff = chromaticRef.current;
-    if (!eff) return;
     const now = performance.now() / 1000;
     const spikeEnd = useHudStore.getState().chromaticSpikeEndAt;
     const remaining = spikeEnd - now;
@@ -111,25 +118,55 @@ export default function EffectsStack() {
       const t = Math.min(1, remaining / CHROMATIC_SPIKE_DURATION);
       value = CHROMATIC_BASE + (CHROMATIC_PEAK - CHROMATIC_BASE) * t;
     }
-    eff.offset.set(value, value);
+    chromaticEffect.offset.set(value, value);
+  });
+
+  // SelectiveBloom needs at least one light in the scene graph when it mounts.
+  // In React Three Fiber, the lighting rig and postprocessing can initialize in
+  // the same commit, so we wait until a light is actually present.
+  useFrame(() => {
+    if (hasSceneLights) return;
+
+    let foundLight = false;
+    scene.traverse((object) => {
+      if ((object as THREE.Object3D & { isLight?: boolean }).isLight) {
+        foundLight = true;
+      }
+    });
+
+    if (foundLight) {
+      setHasSceneLights(true);
+    }
   });
 
   // Entirely skip post-processing on low-end GPUs.
   if (tier <= 1) return null;
 
+  // Mobile treats every device as at-most tier 2 regardless of what
+  // detect-gpu reports — prevents a high-end phone from burning fillrate
+  // on tier-3 bloom intensity and DoF that's wasted on a small viewport.
+  const effectiveTier = isMobile ? Math.min(tier, 2) : tier;
+
   const bloomIntensity =
-    tier >= 3 ? BLOOM_INTENSITY_TIER3 : BLOOM_INTENSITY_TIER2;
+    effectiveTier >= 3 ? BLOOM_INTENSITY_TIER3 : BLOOM_INTENSITY_TIER2;
   const bokehScale = mode === 'focus' ? BOKEH_FOCUS : BOKEH_AMBIENT;
-  const dofEnabled = tier >= 2 && !isMobile;
+  const dofEnabled = effectiveTier >= 2 && !isMobile;
+  // ChromaticAberration costs a full-screen pass and a uniform update
+  // every frame — skip it on mobile regardless of tier.
+  const chromaticEnabled = !isMobile;
 
   return (
     <EffectComposer>
-      <SelectiveBloom
-        selectionLayer={1}
-        intensity={bloomIntensity}
-        luminanceThreshold={BLOOM_LUMINANCE_THRESHOLD}
-        mipmapBlur
-      />
+      {hasSceneLights ? (
+        <SelectiveBloom
+          selectionLayer={1}
+          intensity={bloomIntensity}
+          luminanceThreshold={BLOOM_LUMINANCE_THRESHOLD}
+          mipmapBlur
+        />
+      ) : (
+        <></>
+      )}
       {dofEnabled ? (
         <DepthOfField
           target={dofTarget}
@@ -139,14 +176,11 @@ export default function EffectsStack() {
       ) : (
         <></>
       )}
-      <ChromaticAberration
-        // Ref typing is wrong in the library (`typeof ChromaticAberrationEffect`);
-        // the runtime ref is an instance. Cast safely.
-        ref={chromaticRef as unknown as React.Ref<typeof ChromaticAberrationEffect>}
-        offset={new THREE.Vector2(CHROMATIC_BASE, CHROMATIC_BASE)}
-        radialModulation={false}
-        modulationOffset={0}
-      />
+      {chromaticEnabled ? (
+        <primitive object={chromaticEffect} />
+      ) : (
+        <></>
+      )}
       <Noise
         opacity={NOISE_OPACITY}
         blendFunction={BlendFunction.OVERLAY}

@@ -30,6 +30,7 @@ import * as THREE from 'three';
 import { useGraphStore } from '@/store/useGraphStore';
 import { useCinemaStore } from '@/store/useCinemaStore';
 import { useExplorationStore } from '@/store/useExplorationStore';
+import { useHudStore } from '@/store/useHudStore';
 import { CATEGORY_COLORS } from '@/data/types';
 import type { NeuralNode, NodeLevel } from '@/data/types';
 import { fire, preFire, registerPulse } from '@/hooks/useChainReaction';
@@ -151,13 +152,42 @@ function Neuron({ node }: NeuronProps) {
   const showLabel = node.level <= 1 || isHovered || isActive;
 
   // ── Pointer handlers ────────────────────────────────────────────────────
+  //
+  // Two gesture paths coexist:
+  //   • Mouse: onPointerOver / onPointerOut drive the hover shimmer;
+  //     onClick runs the full activation.
+  //   • Touch: onPointerDown marks the start + plays the hover cue;
+  //     onPointerUp runs the activation. If the press held ≥ 250 ms we
+  //     treat it as a focus-lock and also open the DetailCard.
+  //
+  // Each handler guards itself by `e.pointerType` so the two paths never
+  // double-fire. (R3F dispatches `onClick` after a touch tap too — we
+  // explicitly bail out of it for touch.)
+
+  const touchStartRef = useRef<number | null>(null);
+  /** Long-press threshold — taps shorter than this are a plain click. */
+  const LONG_PRESS_MS = 250;
+
+  // Shared activation logic for both mouse click and touch release.
+  const activateNeuron = useCallback(
+    (openDetail = false) => {
+      activate(node.id);
+      useExplorationStore.getState().visit(node.id);
+      fire(node.id);
+      focusOn(node.id);
+      playFX('select-chime');
+      playFX('fire-whoosh');
+      if (openDetail) useHudStore.getState().setDetailOpen(true);
+    },
+    [activate, focusOn, node.id],
+  );
 
   const onPointerOver = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
+      if (e.pointerType === 'touch') return; // hover is mouse-only
       e.stopPropagation();
       document.body.style.cursor = 'pointer';
       hover(node.id);
-      // Shimmer 1-hop neighbors (no cascade) — cancels any in-flight event.
       preFire(node.id);
       playFX('hover-blip');
     },
@@ -166,6 +196,7 @@ function Neuron({ node }: NeuronProps) {
 
   const onPointerOut = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
+      if (e.pointerType === 'touch') return;
       e.stopPropagation();
       document.body.style.cursor = 'auto';
       hover(null);
@@ -173,22 +204,44 @@ function Neuron({ node }: NeuronProps) {
     [hover],
   );
 
+  const onPointerDown = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      if (e.pointerType !== 'touch') return; // mouse handled by onClick
+      e.stopPropagation();
+      touchStartRef.current = performance.now();
+      // Immediate visual + audio feedback — same cues the mouse hover gets.
+      hover(node.id);
+      preFire(node.id);
+      playFX('hover-blip');
+    },
+    [hover, node.id],
+  );
+
+  const onPointerUp = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      if (e.pointerType !== 'touch') return;
+      e.stopPropagation();
+      const start = touchStartRef.current;
+      if (start === null) return;
+      touchStartRef.current = null;
+      const duration = performance.now() - start;
+      // Long-press (focus-lock) also opens the DetailCard; short tap is
+      // the same as a desktop click.
+      activateNeuron(duration >= LONG_PRESS_MS);
+    },
+    [activateNeuron],
+  );
+
   const onClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
+      // Touch taps also dispatch onClick in R3F — we've already handled
+      // them in onPointerUp, so bail to prevent double activation.
+      if ((e as unknown as ThreeEvent<PointerEvent>).pointerType === 'touch')
+        return;
       e.stopPropagation();
-      activate(node.id);
-      // Mark as visited for progressive-discovery tracking — feeds the
-      // CoherenceMeter percentage and the unlock detection in
-      // useExplorationStore.checkUnlocks.
-      useExplorationStore.getState().visit(node.id);
-      // Full chain reaction: source + 1-hop + 2-hop waves.
-      fire(node.id);
-      // Cinema focus — CinemaCamera lerps to the node.
-      focusOn(node.id);
-      playFX('select-chime');
-      playFX('fire-whoosh');
+      activateNeuron(false);
     },
-    [activate, focusOn, node.id],
+    [activateNeuron],
   );
 
   // Force layout still settling — skip render until a position is written.
@@ -200,6 +253,8 @@ function Neuron({ node }: NeuronProps) {
       position={[position.x, position.y, position.z]}
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
       onClick={onClick}
     >
       <NeuronCore

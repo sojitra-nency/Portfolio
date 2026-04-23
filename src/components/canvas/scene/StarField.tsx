@@ -20,6 +20,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { getGPUTier } from 'detect-gpu';
 import * as THREE from 'three';
 
+import { useHudStore } from '@/store/useHudStore';
+
 // ---------------------------------------------------------------------------
 // Layer configuration (deepest → closest)
 // ---------------------------------------------------------------------------
@@ -144,7 +146,10 @@ function StarPlane({
 
 export default function StarField() {
   const tier = useGPUTier();
-  const halveCount = tier <= 1;
+  const isMobile = useHudStore((s) => s.isMobile);
+  // Halve on tier 0/1 OR on mobile — fewer draw-calls and overdraw on
+  // small screens that also tend to have lower fillrate.
+  const halveCount = tier <= 1 || isMobile;
   return (
     <>
       {PLANES.map((config) => (

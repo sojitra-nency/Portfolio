@@ -28,7 +28,7 @@
  * `neural-motion.ts`.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { damp3 } from 'maath/easing';
 import * as THREE from 'three';
@@ -57,12 +57,21 @@ const DRIFT_PERIOD = 60; // s
 const BREATHE_AMP = 3; // units
 const BREATHE_PERIOD = 24; // s
 
+/** Pinch-zoom range. The final camera distance from origin is clamped
+ *  into [MIN_DIST, MAX_DIST] after pinch + ambient drift compose. */
+const MIN_DIST = 20;
+const MAX_DIST = 120;
+/** Pixels of finger-travel → world-unit zoom. Tuned so a 150-pixel pinch
+ *  moves the camera ~50 units — satisfying but not twitchy. */
+const PINCH_SENSITIVITY = 0.35;
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function CinemaCamera() {
   const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
   const reducedMotion = useReducedMotion();
 
   // Scratch vectors — mutated in place every frame. Allocated once per mount.
@@ -70,12 +79,69 @@ export default function CinemaCamera() {
   const desiredLookAt = useMemo(() => new THREE.Vector3(), []);
   const currentLookAt = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
+  // Pinch-zoom offset applied on top of whichever pose the mode produced.
+  // Positive = camera further out; negative = camera closer in. Ref-based
+  // so a pinch in progress doesn't trigger React re-renders.
+  const pinchOffsetRef = useRef(0);
+  const pinchStateRef = useRef<{
+    startDist: number;
+    startOffset: number;
+  } | null>(null);
+
   // Seed camera pose on mount so the first frame doesn't snap from wherever
   // R3F leaves the default.
   useEffect(() => {
     camera.position.set(0, 0, AMBIENT_R);
     camera.lookAt(0, 0, 0);
   }, [camera]);
+
+  // Two-finger pinch on the canvas → camera-distance offset. Listens on
+  // the window so the gesture doesn't end if fingers slide off the
+  // canvas element mid-pinch. touchmove is non-passive so we can
+  // preventDefault and stop the browser from page-zooming underneath us.
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const distanceBetween = (a: Touch, b: Touch): number => {
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      return Math.hypot(dx, dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      pinchStateRef.current = {
+        startDist: distanceBetween(e.touches[0], e.touches[1]),
+        startOffset: pinchOffsetRef.current,
+      };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const state = pinchStateRef.current;
+      if (!state || e.touches.length !== 2) return;
+      e.preventDefault();
+      const currentDist = distanceBetween(e.touches[0], e.touches[1]);
+      const delta = (state.startDist - currentDist) * PINCH_SENSITIVITY;
+      // Fingers apart (currentDist > startDist) → delta < 0 → zoom in.
+      // Fingers together → delta > 0 → zoom out.
+      pinchOffsetRef.current = state.startOffset + delta;
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchStateRef.current = null;
+    };
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd, { passive: true });
+    canvas.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [gl]);
 
   useFrame((_, delta) => {
     const { mode, focusTarget, focusDistance } = useCinemaStore.getState();
@@ -115,6 +181,29 @@ export default function CinemaCamera() {
         );
       }
       desiredLookAt.set(0, 0, 0);
+    }
+
+    // ── 1b. Apply pinch-zoom offset, then clamp to [MIN_DIST, MAX_DIST] ──
+    // We scale the desired position vector (from its look-at target)
+    // outward by the pinch offset. This preserves the mode's direction
+    // while pushing the camera closer or further away. Clamping keeps
+    // the user inside a sane range even if they fling the pinch.
+    const pinch = pinchOffsetRef.current;
+    if (pinch !== 0 || MIN_DIST > 0) {
+      const offsetFromLook = desiredPos.clone().sub(desiredLookAt);
+      const baseDist = offsetFromLook.length();
+      if (baseDist > 1e-4) {
+        let nextDist = baseDist + pinch;
+        if (nextDist < MIN_DIST) {
+          nextDist = MIN_DIST;
+          pinchOffsetRef.current = MIN_DIST - baseDist;
+        } else if (nextDist > MAX_DIST) {
+          nextDist = MAX_DIST;
+          pinchOffsetRef.current = MAX_DIST - baseDist;
+        }
+        offsetFromLook.multiplyScalar(nextDist / baseDist);
+        desiredPos.copy(desiredLookAt).add(offsetFromLook);
+      }
     }
 
     // ── 2. Move the camera toward the desired pose. ───────────────────────

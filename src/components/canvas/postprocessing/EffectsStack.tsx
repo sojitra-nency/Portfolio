@@ -85,7 +85,7 @@ export default function EffectsStack() {
   const isMobile = useThree((s) => s.size.width < MOBILE_BREAKPOINT);
   const mode = useCinemaStore((s) => s.mode);
   const focusTarget = useCinemaStore((s) => s.focusTarget);
-  const [hasSceneLights, setHasSceneLights] = useState(false);
+  const [bloomLights, setBloomLights] = useState<THREE.Object3D[]>([]);
 
   // Stable fallback target for DoF when nothing is focused — mutated
   // never, so DepthOfField reuses the same Vector3 across re-renders.
@@ -121,21 +121,21 @@ export default function EffectsStack() {
     chromaticEffect.offset.set(value, value);
   });
 
-  // SelectiveBloom needs at least one light in the scene graph when it mounts.
-  // In React Three Fiber, the lighting rig and postprocessing can initialize in
-  // the same commit, so we wait until a light is actually present.
+  // SelectiveBloom requires an explicit `lights` array. The scene lighting rig
+  // and postprocessing can initialize in the same commit, so we discover the
+  // lights lazily and mount bloom only after we have them.
   useFrame(() => {
-    if (hasSceneLights) return;
+    if (bloomLights.length > 0) return;
 
-    let foundLight = false;
+    const nextLights: THREE.Object3D[] = [];
     scene.traverse((object) => {
       if ((object as THREE.Object3D & { isLight?: boolean }).isLight) {
-        foundLight = true;
+        nextLights.push(object);
       }
     });
 
-    if (foundLight) {
-      setHasSceneLights(true);
+    if (nextLights.length > 0) {
+      setBloomLights(nextLights);
     }
   });
 
@@ -157,8 +157,9 @@ export default function EffectsStack() {
 
   return (
     <EffectComposer>
-      {hasSceneLights ? (
+      {bloomLights.length > 0 ? (
         <SelectiveBloom
+          lights={bloomLights}
           selectionLayer={1}
           intensity={bloomIntensity}
           luminanceThreshold={BLOOM_LUMINANCE_THRESHOLD}

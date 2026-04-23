@@ -48,7 +48,11 @@ const SKILLS_COLOR = CATEGORY_COLORS.skills;
  * animates `r` from 0 → 120 — well beyond the viewBox — so the stroke
  * sweeps across the entire screen regardless of aspect ratio.
  */
-function Ripple() {
+function Ripple({ reducedMotion }: { reducedMotion: boolean }) {
+  // Reduced motion — skip the expanding-ring visual. The milestone
+  // banner + aria-live announcement still surface the event for all
+  // users; the ripple is purely decorative.
+  if (reducedMotion) return null;
   return (
     <svg
       className="fixed inset-0 z-40 h-full w-full pointer-events-none"
@@ -74,14 +78,32 @@ function Ripple() {
 // Milestone banner
 // ---------------------------------------------------------------------------
 
-function MilestoneBanner({ value }: { value: number }) {
+function MilestoneBanner({
+  value,
+  reducedMotion,
+}: {
+  value: number;
+  reducedMotion: boolean;
+}) {
+  const enter = reducedMotion
+    ? { opacity: 1 }
+    : { opacity: 1, y: 0 };
+  const initial = reducedMotion
+    ? { opacity: 0 }
+    : { opacity: 0, y: -16 };
+  const exit = reducedMotion
+    ? { opacity: 0 }
+    : { opacity: 0, y: -16 };
   return (
     <motion.div
       className="fixed inset-x-0 top-24 z-50 flex justify-center pointer-events-none"
-      initial={{ opacity: 0, y: -16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -16 }}
-      transition={{ duration: 0.3, ease: EASE_EXPO }}
+      initial={initial}
+      animate={enter}
+      exit={exit}
+      transition={{
+        duration: reducedMotion ? 0 : 0.3,
+        ease: EASE_EXPO,
+      }}
       role="status"
       aria-live="polite"
     >
@@ -220,14 +242,31 @@ export default function CoherenceMeter() {
       </motion.div>
 
       {/* Ripple — keyed so each milestone remounts a fresh SVG. */}
-      {rippleKey !== null && <Ripple key={rippleKey} />}
+      {rippleKey !== null && (
+        <Ripple key={rippleKey} reducedMotion={reducedMotion} />
+      )}
 
       {/* Banner — AnimatePresence runs the exit slide-out when unmounted. */}
       <AnimatePresence>
         {bannerValue !== null && (
-          <MilestoneBanner key={bannerValue} value={bannerValue} />
+          <MilestoneBanner
+            key={bannerValue}
+            value={bannerValue}
+            reducedMotion={reducedMotion}
+          />
         )}
       </AnimatePresence>
+
+      {/* aria-live announcement for the current coherence percent —
+          ensures screen-reader users hear milestone changes even when
+          the ripple + banner are suppressed. */}
+      <div
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+      >
+        Neural coherence at {percent} percent.
+      </div>
     </>
   );
 }

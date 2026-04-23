@@ -31,7 +31,7 @@
  * 4 connected-neuron chips (click → focus).
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 
 import { useGraphStore } from '@/store/useGraphStore';
@@ -102,6 +102,57 @@ export default function DetailCard() {
 
   const isVisible = Boolean(activeNodeId && isDetailOpen);
 
+  // Refs for focus trapping and focus restoration.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  // On open: record the element that had focus before the dialog opened,
+  // move focus to the close button (autoFocus equivalent), and trap Tab.
+  // On close: restore focus to the previously-focused element.
+  useEffect(() => {
+    if (!isVisible) return;
+
+    // Record the triggering element.
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+
+    // Next tick so the close button has rendered before we focus it.
+    const raf = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
+    const root = cardRef.current;
+    if (!root) {
+      return () => window.cancelAnimationFrame(raf);
+    }
+
+    // Focus-trap: on Tab, clamp focus to children of the card.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    root.addEventListener('keydown', onKey);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      root.removeEventListener('keydown', onKey);
+      // On unmount (card closing), return focus to the original trigger.
+      returnFocusRef.current?.focus?.();
+    };
+  }, [isVisible]);
+
   const node = useMemo(() => {
     if (!activeNodeId) return null;
     return nodes.find((n) => n.id === activeNodeId) ?? null;
@@ -161,6 +212,7 @@ export default function DetailCard() {
       {isVisible && node && (
         <div className={wrapperClasses}>
           <motion.div
+            ref={cardRef}
             className={`${cardBase} ${cardSizing}`}
             style={{
               border: `1px solid ${color}66`, // category color @ 40% alpha
@@ -184,6 +236,7 @@ export default function DetailCard() {
 
             {/* Close */}
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={close}
               aria-label="Close details"

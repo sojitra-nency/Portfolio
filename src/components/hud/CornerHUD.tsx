@@ -98,16 +98,21 @@ function HamburgerIcon() {
 // ---------------------------------------------------------------------------
 
 function Brand() {
+  const reducedMotion = useHudStore((s) => s.isReducedMotion);
   return (
     <div className="flex items-center gap-2.5">
-      {/* Pulsing dot — outer ping ring + crisp core. */}
+      {/* Pulsing dot — outer ping ring + crisp core. Skip the animated
+          ping on reduced motion; the static core still reads as a live
+          indicator. */}
       <div className="relative h-2.5 w-2.5 shrink-0">
-        <motion.span
-          aria-hidden
-          className="absolute inset-0 rounded-full bg-[var(--synapse)]"
-          animate={{ scale: [1, 2, 2], opacity: [0.5, 0, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut' }}
-        />
+        {!reducedMotion && (
+          <motion.span
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-[var(--synapse)]"
+            animate={{ scale: [1, 2, 2], opacity: [0.5, 0, 0] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut' }}
+          />
+        )}
         <span
           className="relative block h-2.5 w-2.5 rounded-full bg-[var(--synapse)]"
           style={{ boxShadow: '0 0 10px rgba(124, 211, 255, 0.7)' }}

@@ -151,8 +151,13 @@ function cancelActiveEvent(): void {
 export function fire(nodeId: string): void {
   cancelActiveEvent();
 
-  // Punch the chromatic aberration post-effect for a "signal shock" feel.
-  useHudStore.getState().chromaticSpike();
+  const reducedMotion = useHudStore.getState().isReducedMotion;
+
+  // Chromatic shock — skipped under reduced motion; just the source
+  // flash is kept, everything else is visual noise the spec excludes.
+  if (!reducedMotion) {
+    useHudStore.getState().chromaticSpike();
+  }
 
   const connections = useGraphStore.getState().connections;
   const oneHop = getNeighbors(nodeId, 1, connections);
@@ -169,9 +174,10 @@ export function fire(nodeId: string): void {
     kind: 'fire',
     source: nodeId,
     sourceStart: start,
-    hop1Ids: [...oneHop],
+    // Reduced motion: collapse the cascade to a single source flash.
+    hop1Ids: reducedMotion ? [] : [...oneHop],
     hop1Start: start + HOP1_DELAY,
-    hop2Ids: hop2Only,
+    hop2Ids: reducedMotion ? [] : hop2Only,
     hop2Start: start + HOP2_DELAY,
   };
 }
@@ -183,6 +189,9 @@ export function fire(nodeId: string): void {
  */
 export function preFire(nodeId: string): void {
   cancelActiveEvent();
+
+  // Hover shimmer is pure decoration — skip entirely on reduced motion.
+  if (useHudStore.getState().isReducedMotion) return;
 
   const connections = useGraphStore.getState().connections;
   const oneHop = getNeighbors(nodeId, 1, connections);

@@ -121,13 +121,17 @@ export default function BootSequence() {
   }, [phase]);
 
   // ── Render ─────────────────────────────────────────────────────────────
+  //
+  // The overlay itself is a plain backdrop — click-anywhere dismiss is
+  // preserved via the `onClick` handler. The "PRESS TO ENTER" line in
+  // phase === 'ready' is a real <button> with autoFocus + a visible
+  // focus ring so keyboard users get a clear target. Any-key dismiss is
+  // retained via the window keydown listener above.
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black"
       onClick={handleDismiss}
-      role="button"
-      aria-label="Press to enter Neural Nexus"
-      tabIndex={0}
+      aria-hidden="false"
     >
       {/* Phase 1 — center pulse */}
       {phase === 'pulse' && (
@@ -158,20 +162,13 @@ export default function BootSequence() {
             const isTyping = !reducedMotion && shown < line.length;
             const isReadyLine =
               i === LINES.length - 1 && shown === line.length;
-            return (
-              <motion.div
-                key={i}
-                initial={
-                  reducedMotion ? false : { opacity: 0, y: 4 }
-                }
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, ease: EASE_EXPO }}
-                className={
-                  isReadyLine
-                    ? 'text-white font-medium'
-                    : 'text-white/80'
-                }
-              >
+            // When the final line is fully typed and we're in the
+            // 'ready' phase, promote it to a real <button> with
+            // autoFocus — gives keyboard users a clear, announceable
+            // target to activate instead of the implicit any-key tap.
+            const renderAsButton = isReadyLine && phase === 'ready';
+            const content = (
+              <>
                 <span>{reducedMotion ? line : line.slice(0, shown)}</span>
                 {isTyping && (
                   <motion.span
@@ -186,6 +183,38 @@ export default function BootSequence() {
                   >
                     ▋
                   </motion.span>
+                )}
+              </>
+            );
+            return (
+              <motion.div
+                key={i}
+                initial={
+                  reducedMotion ? false : { opacity: 0, y: 4 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: EASE_EXPO }}
+                className={
+                  isReadyLine
+                    ? 'text-white font-medium'
+                    : 'text-white/80'
+                }
+              >
+                {renderAsButton ? (
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDismiss();
+                    }}
+                    aria-label="Enter Neural Nexus"
+                    className="rounded-sm bg-transparent px-0 py-0 text-inherit font-inherit focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--synapse)]"
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  content
                 )}
               </motion.div>
             );

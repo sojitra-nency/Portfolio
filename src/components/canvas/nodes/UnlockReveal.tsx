@@ -39,6 +39,9 @@ import { useHudStore } from '@/store/useHudStore';
 import { playFX } from '@/hooks/useAudio';
 import { UNLOCK_GLITCH } from '@/lib/neural-motion';
 
+// Also drop the chromatic spike on reduced motion — user already sees a
+// banner + gets the chord, no need for a full-screen visual hit.
+
 // ---------------------------------------------------------------------------
 // Registries
 // ---------------------------------------------------------------------------
@@ -102,8 +105,10 @@ export default function UnlockReveal() {
     // re-renders the newly-unlocked Neuron.
     return onUnlock((id) => {
       activeReveals.set(id, performance.now() / 1000);
-      // Post-processing chromatic spike — EffectsStack reads the timestamp.
-      useHudStore.getState().chromaticSpike();
+      // Post-processing chromatic spike — skip on reduced motion.
+      if (!useHudStore.getState().isReducedMotion) {
+        useHudStore.getState().chromaticSpike();
+      }
       // Audio cue.
       playFX('unlock-chord');
     });
@@ -112,15 +117,19 @@ export default function UnlockReveal() {
   useFrame(() => {
     if (activeReveals.size === 0) return;
     const now = performance.now() / 1000;
+    // Reduced motion: straight fade (no glitch, no jitter) — we just
+    // snap the reveal to 1 so the Neuron mounts at full size on the
+    // first frame and stays there.
+    const reducedMotion = useHudStore.getState().isReducedMotion;
     const done: string[] = [];
 
     for (const [id, start] of activeReveals) {
       const elapsed = now - start;
       const t = Math.min(elapsed / UNLOCK_GLITCH, 1);
-      const value = revealEnvelope(t);
+      const value = reducedMotion ? 1 : revealEnvelope(t);
       const ref = revealRegistry.get(id);
       if (ref) ref.current = value;
-      if (t >= 1) {
+      if (t >= 1 || reducedMotion) {
         if (ref) ref.current = 1;
         done.push(id);
       }

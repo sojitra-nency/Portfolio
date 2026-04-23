@@ -148,8 +148,9 @@ export default function NeuralMap() {
 
             return (
               <g key={p.id}>
-                {/* Pulsing ring on the active node. */}
-                {active && (
+                {/* Pulsing ring on the active node. Reduced motion gets
+                    a static thicker ring instead of an infinite animation. */}
+                {active && !reducedMotion && (
                   <motion.circle
                     cx={p.x}
                     cy={p.y}
@@ -163,6 +164,17 @@ export default function NeuralMap() {
                       repeat: Infinity,
                       ease: 'easeOut',
                     }}
+                  />
+                )}
+                {active && reducedMotion && (
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={baseR + 3}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1.2}
+                    opacity={0.7}
                   />
                 )}
 

@@ -93,12 +93,17 @@ function Neuron({ node }: NeuronProps) {
   // 1 when fully revealed (or always 1 for non-hidden nodes). Written
   // by UnlockReveal's per-frame loop.
   //
-  // Initial value: if this node is hidden AND an unlock just fired for it,
-  // start at 0 so the Neuron mounts invisible and scales in. Otherwise
-  // (non-hidden, or hidden-but-previously-unlocked across sessions) start
-  // at 1 so it's immediately visible.
+  // Initial value: if this node is hidden AND an unlock just fired for it
+  // AND the user hasn't set prefers-reduced-motion, start at 0 so the
+  // Neuron mounts invisible and scales in. Otherwise start at 1 so it's
+  // immediately visible — reduced-motion users skip the scale-from-0
+  // animation entirely per the a11y spec.
   const revealRef = useRef<number>(
-    node.isHidden && hasActiveReveal(node.id) ? 0 : 1,
+    node.isHidden &&
+      hasActiveReveal(node.id) &&
+      !useHudStore.getState().isReducedMotion
+      ? 0
+      : 1,
   );
 
   // Group ref — used to set world position + scale imperatively each frame.
@@ -165,8 +170,6 @@ function Neuron({ node }: NeuronProps) {
   // explicitly bail out of it for touch.)
 
   const touchStartRef = useRef<number | null>(null);
-  /** Long-press threshold — taps shorter than this are a plain click. */
-  const LONG_PRESS_MS = 250;
 
   // Shared activation logic for both mouse click and touch release.
   const activateNeuron = useCallback(
@@ -224,10 +227,10 @@ function Neuron({ node }: NeuronProps) {
       const start = touchStartRef.current;
       if (start === null) return;
       touchStartRef.current = null;
-      const duration = performance.now() - start;
-      // Long-press (focus-lock) also opens the DetailCard; short tap is
-      // the same as a desktop click.
-      activateNeuron(duration >= LONG_PRESS_MS);
+      // Short tap and long-press both open the DetailCard — long-press
+      // used to be reserved for a separate "focus lock" gesture but a
+      // plain tap-to-inspect is the expected mobile UX.
+      activateNeuron(true);
     },
     [activateNeuron],
   );
@@ -239,7 +242,10 @@ function Neuron({ node }: NeuronProps) {
       if ((e as unknown as ThreeEvent<PointerEvent>).pointerType === 'touch')
         return;
       e.stopPropagation();
-      activateNeuron(false);
+      // Click → activate + focus + open the DetailCard. Keyboard users
+      // can still separately Tab to cycle and press Enter; the Esc
+      // binding closes the card without deselecting the node.
+      activateNeuron(true);
     },
     [activateNeuron],
   );
@@ -278,19 +284,31 @@ function Neuron({ node }: NeuronProps) {
           // Pointer-events off so the DOM label never swallows a click
           // meant for the neuron beneath it.
           style={{
-            color: 'white',
-            fontFamily: 'var(--font-syne)',
-            fontSize: '13px',
-            fontWeight: 500,
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
             pointerEvents: 'none',
             userSelect: 'none',
-            textShadow: '0 0 8px rgba(0, 0, 0, 0.85)',
-            letterSpacing: '0.02em',
           }}
         >
-          {node.label}
+          {/* Glass plate guarantees WCAG AA contrast over the nebula
+              (white on rgba(10,10,26,0.7) + backdrop-blur clears 4.5:1). */}
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '2px 8px',
+              borderRadius: '4px',
+              background: 'rgba(10, 10, 26, 0.7)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              color: 'white',
+              fontFamily: 'var(--font-syne)',
+              fontSize: '13px',
+              fontWeight: 500,
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.02em',
+            }}
+          >
+            {node.label}
+          </span>
         </Html>
       )}
     </group>

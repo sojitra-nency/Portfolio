@@ -108,7 +108,13 @@ export default function NeuronHalo({
   useEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    mesh.layers.set(1);
+    // Keep the halo on the default layer (0) so it renders in the main
+    // pass, AND add layer 1 so SelectiveBloom picks it up for the bloom
+    // composite. `layers.enable()` is additive; `layers.set(1)` would
+    // REMOVE the halo from layer 0 and make it invisible whenever
+    // SelectiveBloom is off (low-tier GPU, pre-init, any issue in the
+    // post-processing chain).
+    mesh.layers.enable(1);
   }, []);
 
   // Read shared pulse every frame. Cheap — single uniform write.

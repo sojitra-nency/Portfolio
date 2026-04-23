@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { onUnlock } from '@/store/useExplorationStore';
 import { useGraphStore } from '@/store/useGraphStore';
+import { useHudStore } from '@/store/useHudStore';
 import { EASE_EXPO } from '@/lib/neural-motion';
 
 const BANNER_DURATION_MS = 3000;
@@ -25,6 +26,7 @@ const BANNER_DURATION_MS = 3000;
 export default function UnlockBanner() {
   const [label, setLabel] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
+  const reducedMotion = useHudStore((s) => s.isReducedMotion);
 
   useEffect(() => {
     const unsubscribe = onUnlock((id) => {
@@ -58,10 +60,13 @@ export default function UnlockBanner() {
         <motion.div
           key={label}
           className="fixed inset-x-0 top-14 z-50 flex justify-center pointer-events-none"
-          initial={{ opacity: 0, y: -28 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -28 }}
-          transition={{ duration: 0.4, ease: EASE_EXPO }}
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -28 }}
+          animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -28 }}
+          transition={{
+            duration: reducedMotion ? 0 : 0.4,
+            ease: EASE_EXPO,
+          }}
           role="status"
           aria-live="polite"
         >

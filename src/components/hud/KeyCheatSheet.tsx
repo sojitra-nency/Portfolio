@@ -27,6 +27,7 @@ interface Shortcut {
 }
 
 const SHORTCUTS: readonly Shortcut[] = [
+  { keys: ['Cmd+K'], action: 'Open node search palette' },
   { keys: ['Esc'], action: 'Close detail / return to ambient' },
   { keys: ['Tab', 'Shift+Tab'], action: 'Cycle through visible neurons' },
   { keys: ['Enter'], action: 'Open detail on the active neuron' },

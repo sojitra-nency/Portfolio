@@ -27,6 +27,8 @@ export interface HudState {
   isDetailOpen: boolean;
   /** Whether the KeyCheatSheet overlay is visible (toggled by `?`). */
   isCheatSheetOpen: boolean;
+  /** Whether the Cmd-K command palette is open. */
+  isCommandPaletteOpen: boolean;
   /** Whether the guided tour is actively playing. */
   isTourActive: boolean;
   /** Text shown in the CommTooltip pill, or `null` to hide it. */
@@ -46,6 +48,7 @@ export interface HudState {
   setBootComplete: (value: boolean) => void;
   setDetailOpen: (value: boolean) => void;
   setCheatSheetOpen: (value: boolean) => void;
+  setCommandPaletteOpen: (value: boolean) => void;
   setTourActive: (value: boolean) => void;
   setCommTooltipText: (value: string | null) => void;
   /** Trigger a brief chromatic-aberration pulse — typically wired to
@@ -61,6 +64,7 @@ export const useHudStore = create<HudState>()(
     isBootComplete: false,
     isDetailOpen: false,
     isCheatSheetOpen: false,
+    isCommandPaletteOpen: false,
     isTourActive: false,
     commTooltipText: null,
     chromaticSpikeEndAt: 0,
@@ -72,6 +76,7 @@ export const useHudStore = create<HudState>()(
     setBootComplete: (value) => set({ isBootComplete: value }),
     setDetailOpen: (value) => set({ isDetailOpen: value }),
     setCheatSheetOpen: (value) => set({ isCheatSheetOpen: value }),
+    setCommandPaletteOpen: (value) => set({ isCommandPaletteOpen: value }),
     setTourActive: (value) => set({ isTourActive: value }),
     setCommTooltipText: (value) => set({ commTooltipText: value }),
     chromaticSpike: () =>

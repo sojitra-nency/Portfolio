@@ -31,7 +31,7 @@
  * 4 connected-neuron chips (click → focus).
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, type Variants } from 'framer-motion';
 
 import { useGraphStore } from '@/store/useGraphStore';
@@ -182,6 +182,30 @@ export default function DetailCard() {
     useCinemaStore.getState().focusOn(id);
   };
 
+  // Copy-link toast: shows "Link copied" for 1.5 s. A single timer ref
+  // so rapid re-clicks restart the countdown cleanly.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const copyLink = async () => {
+    if (!node) return;
+    const url = `${window.location.origin}/?focus=${encodeURIComponent(node.id)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setToast('Link copied');
+    } catch {
+      setToast('Copy failed');
+    }
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 1500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
   // Flex wrapper handles vertical centering (desktop) or bottom anchoring
   // (mobile) so the card's own transform can animate freely.
   const wrapperClasses = isMobile
@@ -234,6 +258,29 @@ export default function DetailCard() {
               <Bracket className="bottom-2 left-2" rotate={270} />
             </div>
 
+            {/* Copy link */}
+            <button
+              type="button"
+              onClick={copyLink}
+              aria-label="Copy link to this neuron"
+              className="absolute top-3.5 right-12 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </button>
+
             {/* Close */}
             <button
               ref={closeButtonRef}
@@ -256,6 +303,30 @@ export default function DetailCard() {
                 <line x1="18" y1="6" x2="6" y2="18" />
               </svg>
             </button>
+
+            {/* Toast — local to the card, pointer-none so it never steals
+                clicks. Uses aria-live so screen readers catch the status. */}
+            <AnimatePresence>
+              {toast && (
+                <motion.div
+                  key={toast}
+                  role="status"
+                  aria-live="polite"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18, ease: EASE_EXPO }}
+                  className="pointer-events-none absolute top-14 right-3.5 z-10 rounded-md px-2.5 py-1 font-mono-hud text-[10px] uppercase tracking-[0.2em]"
+                  style={{
+                    background: `${color}18`,
+                    border: `1px solid ${color}50`,
+                    color,
+                  }}
+                >
+                  {toast}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Content — keyed by node.id so it re-runs its fade when the
                 user clicks a different neuron while the card stays open. */}

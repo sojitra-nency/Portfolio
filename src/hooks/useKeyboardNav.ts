@@ -124,6 +124,14 @@ export default function useKeyboardNav(): void {
           break;
         }
       }
+
+      // Cmd+K / Ctrl+K — open command palette (checked outside the switch
+      // so modifier key combos don't need a dedicated case branch).
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const hud = useHudStore.getState();
+        hud.setCommandPaletteOpen(!hud.isCommandPaletteOpen);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);

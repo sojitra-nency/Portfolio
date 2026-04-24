@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 
 import useResponsive from '@/hooks/useResponsive';
@@ -8,6 +9,7 @@ import useAudio from '@/hooks/useAudio';
 import useGuidedTour from '@/hooks/useGuidedTour';
 import useIdleCuriosity from '@/hooks/useIdleCuriosity';
 import useEasterEggs from '@/hooks/useEasterEggs';
+import useDeepLink from '@/hooks/useDeepLink';
 import BootSequence from '@/components/hud/BootSequence';
 import CornerHUD from '@/components/hud/CornerHUD';
 import CoherenceMeter from '@/components/hud/CoherenceMeter';
@@ -16,6 +18,7 @@ import DetailCard from '@/components/hud/DetailCard';
 import CommTooltip from '@/components/hud/CommTooltip';
 import KeyCheatSheet from '@/components/hud/KeyCheatSheet';
 import UnlockBanner from '@/components/hud/UnlockBanner';
+import CommandPalette from '@/components/hud/CommandPalette';
 import { useHudStore } from '@/store/useHudStore';
 
 /**
@@ -37,6 +40,14 @@ const NeuralScene = dynamic(
   { ssr: false },
 );
 
+/** useDeepLink reads `useSearchParams`, which Next 16 requires to live
+ * inside a Suspense boundary. Isolating it here keeps the rest of the
+ * page outside that boundary so nothing else is affected. */
+function DeepLinkBridge() {
+  useDeepLink();
+  return null;
+}
+
 export default function Home() {
   useResponsive();
   useKeyboardNav();
@@ -51,6 +62,10 @@ export default function Home() {
       id="main-content"
       className="relative w-full h-screen overflow-hidden bg-[var(--void)]"
     >
+      <Suspense fallback={null}>
+        <DeepLinkBridge />
+      </Suspense>
+
       <NeuralScene />
 
       {!isBootComplete && <BootSequence />}
@@ -63,6 +78,7 @@ export default function Home() {
           <CommTooltip />
           <KeyCheatSheet />
           <UnlockBanner />
+          <CommandPalette />
         </>
       )}
     </main>

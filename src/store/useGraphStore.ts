@@ -50,6 +50,10 @@ export interface GraphState {
   /** Toggle whether a cluster's children are visible. Idempotent. */
   toggleCluster: (id: string) => void;
 
+  /** Ensure a cluster is expanded (never collapses). Used when navigating
+   * directly to a child node so it becomes visible in the canvas. */
+  expandCluster: (id: string) => void;
+
   /** Write a single node's world position. Creates a new Map reference so
    * `subscribeWithSelector` listeners on `positions` fire correctly. */
   setPosition: (id: string, pos: THREE.Vector3) => void;
@@ -89,6 +93,14 @@ export const useGraphStore = create<GraphState>()(
         } else {
           next.add(id);
         }
+        return { expandedClusters: next };
+      }),
+
+    expandCluster: (id) =>
+      set((state) => {
+        if (state.expandedClusters.has(id)) return state;
+        const next = new Set(state.expandedClusters);
+        next.add(id);
         return { expandedClusters: next };
       }),
 

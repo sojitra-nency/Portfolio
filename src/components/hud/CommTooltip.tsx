@@ -136,6 +136,19 @@ export default function CommTooltip() {
           >
             {pillContent}
           </motion.div>
+        ) : text === FOCUS_HINT ? (
+          <motion.div
+            key="comm-tooltip-focus"
+            role="status"
+            aria-live="polite"
+            className={`${pillBase} fixed bottom-6 right-6 z-40 pointer-events-none`}
+            variants={commTooltipReveal(reducedMotion)}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {pillContent}
+          </motion.div>
         ) : (
           <motion.div
             key="comm-tooltip-desktop"

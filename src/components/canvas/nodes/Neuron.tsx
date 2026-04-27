@@ -281,8 +281,6 @@ function Neuron({ node }: NeuronProps) {
           position={[0, size + 0.6, 0]}
           center
           distanceFactor={12}
-          // Pointer-events off so the DOM label never swallows a click
-          // meant for the neuron beneath it.
           style={{
             pointerEvents: 'none',
             userSelect: 'none',

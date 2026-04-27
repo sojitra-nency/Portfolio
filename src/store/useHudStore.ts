@@ -72,7 +72,6 @@ export const useHudStore = create<HudState>()(
     isMobile: false,
     isReducedMotion: false,
     gpuTier: 2,
-
     setBootComplete: (value) => set({ isBootComplete: value }),
     setDetailOpen: (value) => set({ isDetailOpen: value }),
     setCheatSheetOpen: (value) => set({ isCheatSheetOpen: value }),

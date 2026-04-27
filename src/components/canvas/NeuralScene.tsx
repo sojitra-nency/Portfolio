@@ -137,6 +137,7 @@ export default function NeuralScene() {
             alpha: false,
             powerPreference: 'high-performance',
           }}
+          style={{ overflow: 'visible' }}
         >
           <color attach="background" args={['#04050E']} />
 

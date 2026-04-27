@@ -37,6 +37,7 @@ import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { useGraphStore } from '@/store/useGraphStore';
 import { useHudStore } from '@/store/useHudStore';
 import { useCinemaStore } from '@/store/useCinemaStore';
+import { useExplorationStore } from '@/store/useExplorationStore';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/data/types';
 import { getNeighbors } from '@/lib/graph-math';
 import { EASE_EXPO } from '@/lib/neural-motion';
@@ -178,8 +179,17 @@ export default function DetailCard() {
   };
 
   const focusNeighbor = (id: string) => {
-    useGraphStore.getState().activate(id);
+    const { nodes, expandCluster, activate } = useGraphStore.getState();
+    // If the target is a child node (level ≥ 2), expand its parent cluster
+    // so the node is actually rendered in the canvas before the camera arrives.
+    const target = nodes.find((n) => n.id === id);
+    if (target && target.level >= 2 && target.parentId) {
+      expandCluster(target.parentId);
+    }
+    activate(id);
+    useExplorationStore.getState().visit(id);
     useCinemaStore.getState().focusOn(id);
+    useHudStore.getState().setDetailOpen(true);
   };
 
   // Copy-link toast: shows "Link copied" for 1.5 s. A single timer ref
@@ -213,10 +223,10 @@ export default function DetailCard() {
     : 'fixed inset-y-0 right-0 z-40 flex items-center pr-12 pointer-events-none';
 
   const cardBase =
-    'pointer-events-auto relative overflow-hidden bg-[color:var(--void-warm)]/80 backdrop-blur-xl';
+    'pointer-events-auto relative flex flex-col bg-[color:var(--void-warm)]/80 backdrop-blur-xl';
   const cardSizing = isMobile
-    ? 'w-full h-[65vh] rounded-t-2xl'
-    : 'w-[420px] max-h-[80vh] rounded-2xl';
+    ? 'w-full h-[65vh] rounded-t-2xl overflow-hidden'
+    : 'w-[420px] max-h-[80vh] rounded-2xl overflow-hidden';
 
   // Direction-specific enter/exit.
   const initialPose = reducedMotion
@@ -251,7 +261,7 @@ export default function DetailCard() {
             aria-labelledby={`detail-title-${node.id}`}
           >
             {/* Corner L-brackets — draw in once on card mount. */}
-            <div style={{ color }} className="absolute inset-0">
+            <div style={{ color }} className="pointer-events-none absolute inset-0 z-10">
               <Bracket className="top-2 left-2" rotate={0} />
               <Bracket className="top-2 right-2" rotate={90} />
               <Bracket className="bottom-2 right-2" rotate={180} />
@@ -335,34 +345,39 @@ export default function DetailCard() {
               variants={contentVariants}
               initial={reducedMotion ? 'visible' : 'hidden'}
               animate="visible"
-              className="relative h-full overflow-y-auto p-6 pr-10 pb-8 space-y-5 scrollbar-none"
+              className="relative flex min-h-0 flex-1 flex-col"
             >
-              {/* Category badge */}
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{
-                    background: color,
-                    boxShadow: `0 0 8px ${color}`,
-                  }}
-                  aria-hidden
-                />
-                <span
-                  className="font-mono-hud text-[10px] uppercase tracking-[0.24em]"
-                  style={{ color }}
+              {/* ── Fixed header: never scrolls ── */}
+              <div className="shrink-0 px-6 pt-6 pr-10 pb-4">
+                {/* Category badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{
+                      background: color,
+                      boxShadow: `0 0 8px ${color}`,
+                    }}
+                    aria-hidden
+                  />
+                  <span
+                    className="font-mono-hud text-[10px] uppercase tracking-[0.24em]"
+                    style={{ color }}
+                  >
+                    {categoryLabel}
+                  </span>
+                </div>
+
+                {/* Label */}
+                <h2
+                  id={`detail-title-${node.id}`}
+                  className="font-[var(--font-syne)] text-2xl font-bold leading-tight text-white"
                 >
-                  {categoryLabel}
-                </span>
+                  {node.label}
+                </h2>
               </div>
 
-              {/* Label */}
-              <h2
-                id={`detail-title-${node.id}`}
-                className="font-[var(--font-syne)] text-2xl font-bold leading-tight text-white"
-              >
-                {node.label}
-              </h2>
-
+              {/* ── Scrollable body ── */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 pr-10 pb-8 space-y-5 scrollbar-none">
               {/* Summary */}
               {node.summary && (
                 <p className="text-sm leading-relaxed text-gray-300">
@@ -482,6 +497,7 @@ export default function DetailCard() {
                   </div>
                 </div>
               )}
+              </div>
             </motion.div>
           </motion.div>
         </div>

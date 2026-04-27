@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 import { useExplorationStore } from '@/store/useExplorationStore';
 import { useHudStore } from '@/store/useHudStore';
@@ -34,7 +34,6 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const MILESTONES = [25, 50, 75, 100] as const;
 const RIPPLE_DURATION = 1.4; // s — matches the motion transition below
-const BANNER_DURATION = 2000; // ms the banner stays mounted
 
 const SKILLS_COLOR = CATEGORY_COLORS.skills;
 
@@ -74,57 +73,6 @@ function Ripple({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Milestone banner
-// ---------------------------------------------------------------------------
-
-function MilestoneBanner({
-  value,
-  reducedMotion,
-}: {
-  value: number;
-  reducedMotion: boolean;
-}) {
-  const enter = reducedMotion
-    ? { opacity: 1 }
-    : { opacity: 1, y: 0 };
-  const initial = reducedMotion
-    ? { opacity: 0 }
-    : { opacity: 0, y: -16 };
-  const exit = reducedMotion
-    ? { opacity: 0 }
-    : { opacity: 0, y: -16 };
-  return (
-    <motion.div
-      className="fixed inset-x-0 top-24 z-50 flex justify-center pointer-events-none"
-      initial={initial}
-      animate={enter}
-      exit={exit}
-      transition={{
-        duration: reducedMotion ? 0 : 0.3,
-        ease: EASE_EXPO,
-      }}
-      role="status"
-      aria-live="polite"
-    >
-      <div
-        className="flex items-center gap-2.5 rounded-full border border-[color:var(--synapse)]/40 bg-[color:var(--void-warm)]/85 backdrop-blur-lg px-5 py-2"
-        style={{ boxShadow: '0 0 32px rgba(124, 211, 255, 0.35)' }}
-      >
-        <span
-          className="h-1.5 w-1.5 rounded-full bg-[var(--synapse)] animate-neural-pulse"
-          aria-hidden
-        />
-        <span className="font-mono-hud text-xs uppercase tracking-[0.22em] text-white">
-          COHERENCE:{' '}
-          <span className="tabular-nums text-[color:var(--synapse)]">
-            {value}%
-          </span>
-        </span>
-      </div>
-    </motion.div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main
@@ -134,7 +82,6 @@ export default function CoherenceMeter() {
   const percent = useExplorationStore((s) => s.explorationPercent);
   const reducedMotion = useHudStore((s) => s.isReducedMotion);
 
-  const [bannerValue, setBannerValue] = useState<number | null>(null);
   const [rippleKey, setRippleKey] = useState<number | null>(null);
   const lastMilestoneRef = useRef(0);
 
@@ -147,20 +94,14 @@ export default function CoherenceMeter() {
     if (hit <= lastMilestoneRef.current) return;
     lastMilestoneRef.current = hit;
 
-    setBannerValue(hit);
     setRippleKey(hit);
 
     const rippleTimer = window.setTimeout(
       () => setRippleKey(null),
       RIPPLE_DURATION * 1000,
     );
-    const bannerTimer = window.setTimeout(
-      () => setBannerValue(null),
-      BANNER_DURATION,
-    );
     return () => {
       window.clearTimeout(rippleTimer);
-      window.clearTimeout(bannerTimer);
     };
   }, [percent]);
 
@@ -174,7 +115,7 @@ export default function CoherenceMeter() {
         variants={hudEnter(reducedMotion)}
         initial="hidden"
         animate="visible"
-        className="fixed bottom-6 left-6 z-30 pointer-events-none"
+        className="fixed top-[72px] left-6 z-30 pointer-events-none"
       >
         <div className="relative" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
@@ -245,17 +186,6 @@ export default function CoherenceMeter() {
       {rippleKey !== null && (
         <Ripple key={rippleKey} reducedMotion={reducedMotion} />
       )}
-
-      {/* Banner — AnimatePresence runs the exit slide-out when unmounted. */}
-      <AnimatePresence>
-        {bannerValue !== null && (
-          <MilestoneBanner
-            key={bannerValue}
-            value={bannerValue}
-            reducedMotion={reducedMotion}
-          />
-        )}
-      </AnimatePresence>
 
       {/* aria-live announcement for the current coherence percent —
           ensures screen-reader users hear milestone changes even when

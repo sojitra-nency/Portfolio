@@ -29,6 +29,12 @@ export interface HudState {
   isCheatSheetOpen: boolean;
   /** Whether the Cmd-K command palette is open. */
   isCommandPaletteOpen: boolean;
+  /** Whether the DetailCard is collapsed to its header bar. */
+  isDetailMinimized: boolean;
+  /** Whether the NeuralMap minimap is collapsed to a pill. */
+  isMapMinimized: boolean;
+  /** Current width of the detail panel in px (desktop only). */
+  panelWidth: number;
   /** Whether the guided tour is actively playing. */
   isTourActive: boolean;
   /** Text shown in the CommTooltip pill, or `null` to hide it. */
@@ -49,6 +55,9 @@ export interface HudState {
   setDetailOpen: (value: boolean) => void;
   setCheatSheetOpen: (value: boolean) => void;
   setCommandPaletteOpen: (value: boolean) => void;
+  setDetailMinimized: (value: boolean) => void;
+  setMapMinimized: (value: boolean) => void;
+  setPanelWidth: (width: number) => void;
   setTourActive: (value: boolean) => void;
   setCommTooltipText: (value: string | null) => void;
   /** Trigger a brief chromatic-aberration pulse — typically wired to
@@ -66,6 +75,9 @@ export const useHudStore = create<HudState>()(
     isCheatSheetOpen: false,
     isCommandPaletteOpen: false,
     isTourActive: false,
+    isDetailMinimized: false,
+    isMapMinimized: false,
+    panelWidth: 420,
     commTooltipText: null,
     chromaticSpikeEndAt: 0,
     // SSR-safe defaults — `useResponsive` updates these on mount.
@@ -76,6 +88,9 @@ export const useHudStore = create<HudState>()(
     setDetailOpen: (value) => set({ isDetailOpen: value }),
     setCheatSheetOpen: (value) => set({ isCheatSheetOpen: value }),
     setCommandPaletteOpen: (value) => set({ isCommandPaletteOpen: value }),
+    setDetailMinimized: (value) => set({ isDetailMinimized: value }),
+    setMapMinimized: (value) => set({ isMapMinimized: value }),
+    setPanelWidth: (width) => set({ panelWidth: width }),
     setTourActive: (value) => set({ isTourActive: value }),
     setCommTooltipText: (value) => set({ commTooltipText: value }),
     chromaticSpike: () =>

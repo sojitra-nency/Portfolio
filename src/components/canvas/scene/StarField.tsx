@@ -27,9 +27,16 @@ import { useHudStore } from '@/store/useHudStore';
 // ---------------------------------------------------------------------------
 
 const PLANES = [
-  { z: -300, count: 1500, parallax: 0.02, spreadX: 420, spreadY: 310, spreadZ: 40, sizeMin: 0.06, sizeMax: 0.18 },
-  { z: -200, count: 1500, parallax: 0.06, spreadX: 280, spreadY: 200, spreadZ: 30, sizeMin: 0.05, sizeMax: 0.15 },
-  { z: -100, count: 1000, parallax: 0.12, spreadX: 160, spreadY: 115, spreadZ: 20, sizeMin: 0.05, sizeMax: 0.12 },
+  // Deep background — vast, fills corners and edges
+  { z: -350, count: 4000, parallax: 0.01, spreadX: 900, spreadY: 650, spreadZ: 60, sizeMin: 0.15, sizeMax: 0.40 },
+  // Mid-deep — main star field body
+  { z: -250, count: 3200, parallax: 0.03, spreadX: 700, spreadY: 500, spreadZ: 50, sizeMin: 0.20, sizeMax: 0.55 },
+  // Mid layer
+  { z: -180, count: 2200, parallax: 0.06, spreadX: 520, spreadY: 370, spreadZ: 40, sizeMin: 0.28, sizeMax: 0.65 },
+  // Near layer — slightly brighter, fewer
+  { z: -100, count: 1200, parallax: 0.10, spreadX: 380, spreadY: 270, spreadZ: 30, sizeMin: 0.35, sizeMax: 0.80 },
+  // Hero stars — sparse, large, punchy highlights
+  { z: -140, count: 200,  parallax: 0.05, spreadX: 750, spreadY: 540, spreadZ: 80, sizeMin: 0.70, sizeMax: 1.50 },
 ] as const;
 
 type PlaneConfig = (typeof PLANES)[number];
@@ -91,10 +98,27 @@ function StarPlane({
       matrix.compose(pos, quat, scale);
       mesh.setMatrixAt(i, matrix);
 
-      // Alpha is baked into RGB — additive blending sums RGB regardless
-      // of material alpha, so a 0.4 RGB contributes 0.4 of full brightness.
-      const alpha = 0.4 + Math.random() * 0.6;
-      color.setRGB(alpha, alpha, alpha);
+      // Varied star colours: mix of blue-white (O/B type), pure white (A),
+      // and a few warm yellow-white (F/G) — gives the field a natural look.
+      const alpha = 0.70 + Math.random() * 0.30;
+      const starType = Math.random();
+      let r, g, b;
+      if (starType < 0.55) {
+        // Blue-white (most common in deep field)
+        r = alpha * (0.80 + Math.random() * 0.15);
+        g = alpha * (0.88 + Math.random() * 0.10);
+        b = alpha * 1.00;
+      } else if (starType < 0.85) {
+        // Pure white
+        const w = alpha * (0.92 + Math.random() * 0.08);
+        r = w; g = w; b = w;
+      } else {
+        // Warm yellow-white
+        r = alpha * 1.00;
+        g = alpha * (0.90 + Math.random() * 0.08);
+        b = alpha * (0.72 + Math.random() * 0.15);
+      }
+      color.setRGB(r, g, b);
       mesh.setColorAt(i, color);
     }
     mesh.instanceMatrix.needsUpdate = true;
@@ -122,17 +146,18 @@ function StarPlane({
   return (
     <group ref={groupRef}>
       <instancedMesh
-        // Remount if count changes — the instance buffer is fixed-size.
         key={count}
         ref={meshRef}
         args={[undefined, undefined, count]}
         frustumCulled={false}
+        renderOrder={1}
       >
-        <sphereGeometry args={[1, 8, 6]} />
+        <sphereGeometry args={[1, 6, 4]} />
         <meshBasicMaterial
           color="#FFFFFF"
           transparent
           depthWrite={false}
+          depthTest={false}
           blending={THREE.AdditiveBlending}
         />
       </instancedMesh>

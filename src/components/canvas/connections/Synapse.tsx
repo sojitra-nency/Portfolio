@@ -47,7 +47,7 @@ const SynapseMaterial = createShaderMaterial({
   uniforms: {
     uColor: new THREE.Color('#FFFFFF'),
     uTime: 0,
-    uFlowSpeed: 0.3,
+    uFlowSpeed: 0.5,
     uActive: 0,
     uDashed: 0,
   },
@@ -99,7 +99,7 @@ function Synapse({
     if (!source || !target) return null;
     const points = computeCurvePoints(source, target, 0.2, 20);
     const curve = catmullRomPath(points);
-    return new THREE.TubeGeometry(curve, 20, 0.04, 8);
+    return new THREE.TubeGeometry(curve, 24, 0.12, 8);
   }, [source, target]);
 
   // Per-instance material — drei's shaderMaterial clones uniforms.

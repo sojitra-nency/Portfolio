@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 
 import useResponsive from '@/hooks/useResponsive';
 import useKeyboardNav from '@/hooks/useKeyboardNav';
@@ -15,10 +16,11 @@ import CornerHUD from '@/components/hud/CornerHUD';
 import CoherenceMeter from '@/components/hud/CoherenceMeter';
 import NeuralMap from '@/components/hud/NeuralMap';
 import DetailCard from '@/components/hud/DetailCard';
-import CommTooltip from '@/components/hud/CommTooltip';
 import KeyCheatSheet from '@/components/hud/KeyCheatSheet';
 import UnlockBanner from '@/components/hud/UnlockBanner';
 import CommandPalette from '@/components/hud/CommandPalette';
+import QuickViewPortal from '@/components/hud/QuickViewPortal';
+import CanvasControls from '@/components/hud/CanvasControls';
 import { useHudStore } from '@/store/useHudStore';
 
 /**
@@ -56,17 +58,37 @@ export default function Home() {
   useIdleCuriosity();
   useEasterEggs();
   const isBootComplete = useHudStore((s) => s.isBootComplete);
+  const isDetailOpen = useHudStore((s) => s.isDetailOpen);
+  const isDetailMinimized = useHudStore((s) => s.isDetailMinimized);
+  const isMobile = useHudStore((s) => s.isMobile);
+  const panelWidth = useHudStore((s) => s.panelWidth);
+
+  // Panel is only "open as sidebar" on desktop.
+  const sidebarOpen = isDetailOpen && !isMobile;
 
   return (
     <main
       id="main-content"
-      className="relative w-full h-screen overflow-hidden bg-[var(--void)]"
+      className="relative w-full h-screen overflow-hidden bg-[var(--void)] flex"
     >
       <Suspense fallback={null}>
         <DeepLinkBridge />
       </Suspense>
 
-      <NeuralScene />
+      {/* Canvas area — shrinks when the detail panel opens, leaves 40px when minimized */}
+      <motion.div
+        data-canvas-area
+        className="relative h-full flex-shrink-0"
+        animate={{ width: sidebarOpen
+          ? `calc(100% - ${isDetailMinimized ? 40 : panelWidth}px)`
+          : '100%'
+        }}
+        transition={{ duration: 0.35, ease: [0.32, 0, 0.67, 0] }}
+      >
+        <NeuralScene />
+        {/* Toolbar inside canvas so bottom-center is relative to canvas width */}
+        {isBootComplete && <CanvasControls />}
+      </motion.div>
 
       {!isBootComplete && <BootSequence />}
       {isBootComplete && (
@@ -75,10 +97,10 @@ export default function Home() {
           <CoherenceMeter />
           <NeuralMap />
           <DetailCard />
-          <CommTooltip />
           <KeyCheatSheet />
           <UnlockBanner />
           <CommandPalette />
+          <QuickViewPortal />
         </>
       )}
     </main>

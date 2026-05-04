@@ -35,13 +35,17 @@ import * as THREE from 'three';
 
 import { useCinemaStore } from '@/store/useCinemaStore';
 import { useReducedMotion } from '@/lib/animations';
+import { cameraSignals } from '@/lib/cameraControls';
+
+/** Pixels of mouse-drag → world-unit pan. Lower = slower pan. */
+const PAN_SENSITIVITY = 0.12;
 
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
 
 const DEG = Math.PI / 180;
-const AMBIENT_R = 55;
+const AMBIENT_R = 40;
 
 /** smoothTime for damp3 in seconds — ~95 % of distance covered in ~0.75 s. */
 const SMOOTH = 0.25;
@@ -57,13 +61,20 @@ const DRIFT_PERIOD = 60; // s
 const BREATHE_AMP = 3; // units
 const BREATHE_PERIOD = 24; // s
 
-/** Pinch-zoom range. The final camera distance from origin is clamped
- *  into [MIN_DIST, MAX_DIST] after pinch + ambient drift compose. */
-const MIN_DIST = 20;
-const MAX_DIST = 120;
+/** Zoom range.
+ *  MIN_DIST ≈ 5    — fills the view with a single node up close.
+ *  MAX_DIST ≈ 250  — zooms out far enough to see the whole galaxy with breathing room. */
+const MIN_DIST = 5;
+const MAX_DIST = 250;
 /** Pixels of finger-travel → world-unit zoom. Tuned so a 150-pixel pinch
  *  moves the camera ~50 units — satisfying but not twitchy. */
 const PINCH_SENSITIVITY = 0.35;
+/** Wheel delta (px) → world-unit zoom. Scaled so one scroll notch (≈100 px)
+ *  moves ~4 units near origin but we apply exponential feel via a multiplier
+ *  proportional to current distance, so far-out scrolling is faster. */
+const WHEEL_SENSITIVITY = 0.002;
+/** World units per +/- keyboard tap — proportional step applied below. */
+const KEY_ZOOM_FACTOR = 0.12;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -80,13 +91,16 @@ export default function CinemaCamera() {
   const currentLookAt = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   // Pinch-zoom offset applied on top of whichever pose the mode produced.
-  // Positive = camera further out; negative = camera closer in. Ref-based
-  // so a pinch in progress doesn't trigger React re-renders.
   const pinchOffsetRef = useRef(0);
   const pinchStateRef = useRef<{
     startDist: number;
     startOffset: number;
   } | null>(null);
+
+  // Pan offset — accumulated world-space XY shift from Space+drag or Ctrl+drag.
+  const panOffsetRef = useRef(new THREE.Vector2(0, 0));
+  const panDragRef = useRef<{ lastX: number; lastY: number } | null>(null);
+  const spaceHeldRef = useRef(false);
 
   // Seed camera pose on mount so the first frame doesn't snap from wherever
   // R3F leaves the default.
@@ -140,6 +154,119 @@ export default function CinemaCamera() {
       canvas.removeEventListener('touchmove', onTouchMove);
       canvas.removeEventListener('touchend', onTouchEnd);
       canvas.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [gl]);
+
+  // Space+drag or Ctrl+drag → pan the camera view.
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const isPanTrigger = (e: MouseEvent) =>
+      spaceHeldRef.current || e.ctrlKey;
+
+    const updateCursor = () => {
+      if (panDragRef.current) {
+        canvas.style.cursor = 'grabbing';
+      } else if (spaceHeldRef.current) {
+        canvas.style.cursor = 'grab';
+      } else {
+        canvas.style.cursor = '';
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        spaceHeldRef.current = true;
+        if (document.activeElement === canvas || document.activeElement === document.body) {
+          e.preventDefault();
+        }
+        updateCursor();
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        spaceHeldRef.current = false;
+        panDragRef.current = null;
+        updateCursor();
+      }
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!isPanTrigger(e)) return;
+      e.preventDefault();
+      panDragRef.current = { lastX: e.clientX, lastY: e.clientY };
+      updateCursor();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (e.ctrlKey && !panDragRef.current) {
+        canvas.style.cursor = 'grab';
+      } else if (!e.ctrlKey && !spaceHeldRef.current) {
+        if (!panDragRef.current) canvas.style.cursor = '';
+      }
+      const drag = panDragRef.current;
+      if (!drag) return;
+      const dx = e.clientX - drag.lastX;
+      const dy = e.clientY - drag.lastY;
+      drag.lastX = e.clientX;
+      drag.lastY = e.clientY;
+      panOffsetRef.current.x -= dx * PAN_SENSITIVITY;
+      panOffsetRef.current.y += dy * PAN_SENSITIVITY;
+    };
+
+    const onMouseUp = () => {
+      panDragRef.current = null;
+      updateCursor();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    canvas.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      canvas.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [gl]);
+
+  // Mouse wheel + keyboard +/- → zoom in/out via the shared pinchOffsetRef.
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      // Scale delta proportionally to current distance so scrolling feels
+      // equally responsive at min zoom (close) and max zoom (galaxy view).
+      const currentDist = Math.max(
+        MIN_DIST,
+        camera.position.length() + pinchOffsetRef.current,
+      );
+      // deltaY > 0 = scroll down = zoom out (camera moves back).
+      pinchOffsetRef.current += e.deltaY * WHEEL_SENSITIVITY * currentDist;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Skip if a text input is focused.
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === '+' || e.key === '=') {
+        const currentDist = camera.position.length() + pinchOffsetRef.current;
+        pinchOffsetRef.current -= currentDist * KEY_ZOOM_FACTOR;
+      } else if (e.key === '-' || e.key === '_') {
+        const currentDist = camera.position.length() + pinchOffsetRef.current;
+        pinchOffsetRef.current += currentDist * KEY_ZOOM_FACTOR;
+      }
+    };
+
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      canvas.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, [gl]);
 
@@ -205,6 +332,32 @@ export default function CinemaCamera() {
         desiredPos.copy(desiredLookAt).add(offsetFromLook);
       }
     }
+
+    // ── 1bb. Apply UI button signals ─────────────────────────────────────
+    if (cameraSignals.resetRequested) {
+      cameraSignals.resetRequested = false;
+      pinchOffsetRef.current = 0;
+      panOffsetRef.current.set(0, 0);
+      // focusOn('origin') is called from the button — just clear offsets here.
+    }
+    if (cameraSignals.fitRequested) {
+      cameraSignals.fitRequested = false;
+      panOffsetRef.current.set(0, 0);
+      // Push camera out to MAX_DIST by setting pinch offset.
+      const currentDist = desiredPos.clone().sub(desiredLookAt).length();
+      pinchOffsetRef.current = MAX_DIST - currentDist;
+    }
+    if (cameraSignals.zoomDelta !== 0) {
+      pinchOffsetRef.current += cameraSignals.zoomDelta;
+      cameraSignals.zoomDelta = 0;
+    }
+
+    // ── 1c. Apply pan offset to both desired position and look-at ────────
+    const pan = panOffsetRef.current;
+    desiredPos.x += pan.x;
+    desiredPos.y += pan.y;
+    desiredLookAt.x += pan.x;
+    desiredLookAt.y += pan.y;
 
     // ── 2. Move the camera toward the desired pose. ───────────────────────
     if (reducedMotion) {

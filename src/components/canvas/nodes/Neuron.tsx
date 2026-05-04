@@ -48,11 +48,11 @@ import { geometryFor } from './geometries';
 
 /** Fallback node radius when `node.size` isn't set on the data. */
 const SIZE_BY_LEVEL: Record<NodeLevel, number> = {
-  0: 2.0, // origin
-  1: 1.4, // primary clusters
-  2: 0.9, // details
-  3: 0.6, // tools
-  4: 0.5, // hidden
+  0: 3.5, // origin
+  1: 2.5, // primary clusters
+  2: 1.6, // details
+  3: 1.1, // tools
+  4: 0.9, // hidden
 };
 
 /** Maximum jitter magnitude (world units) at reveal = 0. Damps to zero
@@ -154,7 +154,7 @@ function Neuron({ node }: NeuronProps) {
   const size = node.size ?? SIZE_BY_LEVEL[node.level];
   // Steady activation multiplier: 0 idle, 0.6 hover, 1 active.
   const state = isActive ? 1 : isHovered ? 0.6 : 0;
-  const showLabel = node.level <= 1 || isHovered || isActive;
+  const showLabel = node.level <= 2 || isHovered || isActive;
 
   // ── Pointer handlers ────────────────────────────────────────────────────
   //
@@ -174,6 +174,15 @@ function Neuron({ node }: NeuronProps) {
   // Shared activation logic for both mouse click and touch release.
   const activateNeuron = useCallback(
     (openDetail = false) => {
+      // Level-1 nodes are cluster parents — expand them so their children
+      // become visible in the canvas immediately on first click.
+      if (node.level === 1) {
+        useGraphStore.getState().expandCluster(node.id);
+      }
+      // Level-2+ nodes need their parent expanded too.
+      if (node.level >= 2 && node.parentId) {
+        useGraphStore.getState().expandCluster(node.parentId);
+      }
       activate(node.id);
       useExplorationStore.getState().visit(node.id);
       fire(node.id);
@@ -182,7 +191,7 @@ function Neuron({ node }: NeuronProps) {
       playFX('fire-whoosh');
       if (openDetail) useHudStore.getState().setDetailOpen(true);
     },
-    [activate, focusOn, node.id],
+    [activate, focusOn, node.id, node.level, node.parentId],
   );
 
   const onPointerOver = useCallback(
@@ -278,31 +287,34 @@ function Neuron({ node }: NeuronProps) {
       />
       {showLabel && (
         <Html
-          position={[0, size + 0.6, 0]}
+          position={[0, size + 0.8, 0]}
           center
-          distanceFactor={12}
+          distanceFactor={40}
+          zIndexRange={[10, 0]}
           style={{
             pointerEvents: 'none',
             userSelect: 'none',
           }}
         >
-          {/* Glass plate guarantees WCAG AA contrast over the nebula
-              (white on rgba(10,10,26,0.7) + backdrop-blur clears 4.5:1). */}
           <span
             style={{
               display: 'inline-block',
-              padding: '2px 8px',
+              padding: '3px 10px',
               borderRadius: '4px',
-              background: 'rgba(10, 10, 26, 0.7)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
-              color: 'white',
-              fontFamily: 'var(--font-syne)',
-              fontSize: '13px',
-              fontWeight: 500,
+              background: 'rgba(4, 5, 14, 0.92)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              color: '#ffffff',
+              fontFamily: 'var(--font-jetbrains), monospace',
+              fontSize: node.level === 0 ? '13px' : node.level === 1 ? '11px' : '10px',
+              fontWeight: node.level <= 1 ? 600 : 500,
               textAlign: 'center',
               whiteSpace: 'nowrap',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.06em',
+              textTransform: node.level <= 1 ? 'uppercase' : 'none',
+              textShadow: '0 0 8px rgba(255,255,255,0.4)',
+              lineHeight: '1.4',
             }}
           >
             {node.label}

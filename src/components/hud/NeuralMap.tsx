@@ -91,6 +91,7 @@ function projectPoint(
 export default function NeuralMap() {
   const isMobile = useHudStore((s) => s.isMobile);
   const reducedMotion = useHudStore((s) => s.isReducedMotion);
+  const isMinimized = useHudStore((s) => s.isMapMinimized);
   const positions = useGraphStore((s) => s.positions);
   const activeNodeId = useGraphStore((s) => s.activeNodeId);
   const nodes = useGraphStore((s) => s.nodes);
@@ -158,6 +159,9 @@ export default function NeuralMap() {
   if (isMobile) return null;
   if (projected.length === 0) return null;
 
+  const toggleMinimize = () =>
+    useHudStore.getState().setMapMinimized(!isMinimized);
+
   const origin = projected.find((p) => p.id === ORIGIN_ID);
   const primaries = projected.filter((p) => p.id !== ORIGIN_ID);
 
@@ -173,7 +177,42 @@ export default function NeuralMap() {
       initial="hidden"
       animate="visible"
     >
-      <div className="rounded-xl border border-white/10 bg-[color:var(--void-warm)]/70 backdrop-blur-lg p-1.5">
+      <div className="rounded-xl border border-white/10 bg-[color:var(--void-warm)]/70 backdrop-blur-lg overflow-hidden">
+        {/* Header bar — always visible, contains minimize toggle */}
+        <div className="flex items-center justify-between px-3 py-1.5 gap-3">
+          <span className="font-mono-hud text-[9px] uppercase tracking-[0.22em] text-white/40 select-none">
+            Neural Map
+          </span>
+          <button
+            type="button"
+            onClick={toggleMinimize}
+            aria-label={isMinimized ? 'Expand neural map' : 'Collapse neural map'}
+            className="inline-flex h-5 w-5 items-center justify-center rounded text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--synapse)]"
+          >
+            {isMinimized ? (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+            ) : (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Map body — animates collapse */}
+        <AnimatePresence initial={false}>
+        {!isMinimized && (
+        <motion.div
+          key="map-body"
+          initial={reducedMotion ? { opacity: 1 } : { opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+          transition={{ duration: 0.22, ease: EASE_EXPO }}
+          style={{ overflow: 'hidden' }}
+        >
+        <div className="px-1.5 pb-1.5">
         <svg
           width={SIZE}
           height={SIZE}
@@ -397,6 +436,10 @@ export default function NeuralMap() {
               );
             })()}
         </svg>
+        </div>
+        </motion.div>
+        )}
+        </AnimatePresence>
       </div>
     </motion.div>
     </div>

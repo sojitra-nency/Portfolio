@@ -225,12 +225,13 @@ export default function CommandPalette() {
             role="dialog"
             aria-modal="true"
             aria-label="Node search"
-            className="fixed left-1/2 top-[20%] z-[56] w-full max-w-lg -translate-x-1/2"
+            className="fixed inset-0 z-[56] flex items-center justify-center pointer-events-none"
             initial={reducedMotion ? false : { opacity: 0, y: -12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.97 }}
             transition={{ duration: 0.2, ease: EASE_EXPO }}
           >
+            <div className="pointer-events-auto w-[min(560px,90vw)]">
             <div className="rounded-xl border border-[color:var(--synapse)]/25 bg-[color:var(--void-warm)]/90 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(124,211,255,0.25)] overflow-hidden">
 
               {/* Search input */}
@@ -297,6 +298,7 @@ export default function CommandPalette() {
                   ↑↓ navigate · Enter select · Esc close
                 </span>
               </div>
+            </div>
             </div>
           </motion.div>
         </>

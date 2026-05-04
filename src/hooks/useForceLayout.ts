@@ -39,15 +39,15 @@ import type { NodeLevel } from '@/data/types';
 
 /** Radius of the randomised initial sphere-shell scatter. Avoids zero-
  * distance overlaps at t = 0 which would otherwise detonate forceCollide. */
-const INITIAL_RADIUS = 40;
+const INITIAL_RADIUS = 20;
 
 /** Fallback radius per level when `node.size` isn't set on the data. */
 const SIZE_BY_LEVEL: Record<NodeLevel, number> = {
-  0: 2.0,
-  1: 1.4,
-  2: 0.9,
-  3: 0.6,
-  4: 0.5,
+  0: 3.5,
+  1: 2.5,
+  2: 1.6,
+  3: 1.1,
+  4: 0.9,
 };
 
 // ---------------------------------------------------------------------------
@@ -113,18 +113,18 @@ export default function useForceLayout(): void {
     });
 
     const simulation = forceSimulation<SimNode>(simNodes, 3)
-      .force('charge', forceManyBody<SimNode>().strength(-120))
+      .force('charge', forceManyBody<SimNode>().strength(-60))
       .force(
         'link',
         forceLink<SimNode, SimLink>(simLinks)
           .id((d) => d.id)
-          .distance(12)
-          .strength(0.4),
+          .distance(8)
+          .strength(0.6),
       )
-      .force('center', forceCenter(0, 0, 0).strength(0.03))
+      .force('center', forceCenter(0, 0, 0).strength(0.08))
       .force(
         'collide',
-        forceCollide<SimNode>().radius((d) => d.radius * 3),
+        forceCollide<SimNode>().radius((d) => d.radius * 2),
       );
 
     // Synchronously tick until alpha decays below alphaMin.

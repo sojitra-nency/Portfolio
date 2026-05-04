@@ -125,7 +125,7 @@ function CanvasFallback() {
 export default function NeuralScene() {
   return (
     <div
-      className="fixed inset-0 w-full h-full"
+      className="absolute inset-0 w-full h-full"
       style={{ background: 'var(--void)' }}
     >
       <CanvasErrorBoundary fallback={<CanvasFallback />}>

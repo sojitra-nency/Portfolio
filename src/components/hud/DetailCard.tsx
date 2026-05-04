@@ -93,15 +93,69 @@ const contentVariants: Variants = {
 // DetailCard
 // ---------------------------------------------------------------------------
 
+/** Outer limit: panel can't exceed 30% of viewport width. No inner minimum — drag to 0 to minimize. */
+const PANEL_MAX_RATIO = 0.30;
+
 export default function DetailCard() {
   const activeNodeId = useGraphStore((s) => s.activeNodeId);
   const isDetailOpen = useHudStore((s) => s.isDetailOpen);
+  const isMinimized = useHudStore((s) => s.isDetailMinimized);
   const isMobile = useHudStore((s) => s.isMobile);
   const reducedMotion = useHudStore((s) => s.isReducedMotion);
+  const panelWidth = useHudStore((s) => s.panelWidth);
   const nodes = useGraphStore((s) => s.nodes);
   const connections = useGraphStore((s) => s.connections);
 
   const isVisible = Boolean(activeNodeId && isDetailOpen);
+
+  // Wrapper ref — used to mutate width directly during drag (no re-renders).
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = useHudStore.getState().panelWidth;
+    const maxWidth = Math.floor(window.innerWidth * PANEL_MAX_RATIO);
+    const canvasEl = document.querySelector<HTMLElement>('[data-canvas-area]');
+
+    const onMove = (ev: PointerEvent) => {
+      // Dragging left → delta positive → width grows.
+      const delta = startX - ev.clientX;
+      const next = Math.min(maxWidth, Math.max(0, startWidth + delta));
+
+      // Mutate DOM directly — zero React re-renders during drag.
+      if (wrapperRef.current) wrapperRef.current.style.width = `${next}px`;
+      if (canvasEl) canvasEl.style.width = `calc(100% - ${next}px)`;
+    };
+
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+
+      const delta = startX - ev.clientX;
+      const next = Math.min(maxWidth, Math.max(0, startWidth + delta));
+
+      // If dragged nearly closed, snap to minimized.
+      if (next < 60) {
+        useHudStore.getState().setDetailMinimized(true);
+        useHudStore.getState().setPanelWidth(startWidth); // restore for re-expand
+        if (wrapperRef.current) wrapperRef.current.style.width = '40px';
+        if (canvasEl) canvasEl.style.width = 'calc(100% - 40px)';
+      } else {
+        useHudStore.getState().setPanelWidth(next);
+        // Clear inline styles — let React take over from store value.
+        if (wrapperRef.current) wrapperRef.current.style.width = '';
+        if (canvasEl) canvasEl.style.width = '';
+      }
+    };
+
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
 
   // Refs for focus trapping and focus restoration.
   const cardRef = useRef<HTMLDivElement>(null);
@@ -175,7 +229,12 @@ export default function DetailCard() {
   const close = () => {
     useGraphStore.getState().deactivate();
     useHudStore.getState().setDetailOpen(false);
+    useHudStore.getState().setDetailMinimized(false);
     useCinemaStore.getState().returnToAmbient();
+  };
+
+  const toggleMinimize = () => {
+    useHudStore.getState().setDetailMinimized(!isMinimized);
   };
 
   const focusNeighbor = (id: string) => {
@@ -216,64 +275,178 @@ export default function DetailCard() {
     };
   }, []);
 
-  // Flex wrapper handles vertical centering (desktop) or bottom anchoring
-  // (mobile) so the card's own transform can animate freely.
+  // Mobile: bottom sheet. Desktop: full-height right panel with dynamic width.
+  // No pointer-events-none on wrapper — the panel IS the interactive area.
   const wrapperClasses = isMobile
     ? 'fixed inset-x-0 bottom-0 z-40 flex items-end pointer-events-none'
-    : 'fixed inset-y-0 right-0 z-40 flex items-center pr-12 pointer-events-none';
+    : isMinimized
+    ? 'fixed top-24 bottom-6 right-0 z-40 flex'
+    : 'fixed inset-y-0 right-0 z-40 flex';
 
   const cardBase =
-    'pointer-events-auto relative flex flex-col bg-[color:var(--void-warm)]/80 backdrop-blur-xl';
+    'relative flex flex-col bg-white/[0.04] backdrop-blur-2xl';
   const cardSizing = isMobile
-    ? 'w-full h-[65vh] rounded-t-2xl overflow-hidden'
-    : 'w-[420px] max-h-[80vh] rounded-2xl overflow-hidden';
+    ? isMinimized
+      ? 'w-full rounded-t-2xl overflow-hidden pointer-events-auto'
+      : 'w-full h-[65vh] rounded-t-2xl overflow-hidden pointer-events-auto'
+    : 'h-full overflow-hidden pointer-events-auto flex-1';
 
   // Direction-specific enter/exit.
   const initialPose = reducedMotion
     ? false
     : isMobile
     ? { opacity: 0, y: 48 }
-    : { opacity: 0, x: 32, scale: 0.98 };
+    : { opacity: 0, x: panelWidth };
   const animatePose = { opacity: 1, x: 0, y: 0, scale: 1 };
   const exitPose = reducedMotion
     ? { opacity: 0 }
     : isMobile
     ? { opacity: 0, y: 48 }
-    : { opacity: 0, x: 32, scale: 0.98 };
+    : { opacity: 0, x: panelWidth };
 
   return (
     <AnimatePresence>
       {isVisible && node && (
-        <div className={wrapperClasses}>
+        <div
+          ref={wrapperRef}
+          className={wrapperClasses}
+          style={!isMobile ? { width: isMinimized ? 40 : panelWidth, flexShrink: 0 } : undefined}
+        >
+          {/* Resize handle — left edge, desktop only, hidden when minimized */}
+          {!isMobile && !isMinimized && (
+            <div
+              onPointerDown={startResize}
+              className="absolute left-0 inset-y-0 w-3 z-50 cursor-ew-resize flex items-center justify-center group"
+              aria-hidden
+            >
+              {/* Visible grip line */}
+              <div
+                className="w-[2px] h-16 rounded-full opacity-20 group-hover:opacity-80 group-hover:h-24 transition-all duration-150"
+                style={{ background: color }}
+              />
+            </div>
+          )}
+
+          {/* Minimized tab — glass tile with rotated label */}
+          {!isMobile && isMinimized && (
+            <button
+              type="button"
+              onClick={toggleMinimize}
+              aria-label="Expand detail panel"
+              className="w-full h-full flex flex-col items-center py-4 gap-4 cursor-pointer transition-all duration-150 hover:bg-white/[0.06]"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderLeft: `2px solid ${color}`,
+                boxShadow: `inset -1px 0 0 rgba(255,255,255,0.05), -4px 0 20px rgba(0,0,0,0.4)`,
+              }}
+            >
+              {/* Colour dot */}
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: color, boxShadow: `0 0 8px ${color}` }}
+              />
+              {/* Node label rotated bottom-to-top */}
+              <span
+                className="font-mono-hud text-[10px] uppercase tracking-[0.18em] flex-shrink-0"
+                style={{
+                  writingMode: 'vertical-rl',
+                  transform: 'rotate(180deg)',
+                  color: 'rgba(255,255,255,0.7)',
+                  maxHeight: '180px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {node.label}
+              </span>
+              {/* Expand chevron at bottom */}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: `${color}`, opacity: 0.8, flexShrink: 0 }} aria-hidden>
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+
+          {/* Full panel — hidden when desktop-minimized */}
           <motion.div
             ref={cardRef}
-            className={`${cardBase} ${cardSizing}`}
-            style={{
-              border: `1px solid ${color}66`, // category color @ 40% alpha
-              boxShadow: `0 20px 60px -20px ${color}40`,
+            className={`${cardBase} ${cardSizing} ${!isMobile && isMinimized ? 'hidden' : ''}`}
+            style={isMobile ? {
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid rgba(255,255,255,0.1)`,
+              boxShadow: `0 20px 60px -20px ${color}40, inset 0 1px 0 rgba(255,255,255,0.08)`,
+            } : {
+              width: '100%',
+              background: 'rgba(255,255,255,0.04)',
+              borderLeft: `1px solid rgba(255,255,255,0.08)`,
+              borderTop: `1px solid rgba(255,255,255,0.06)`,
+              boxShadow: `-16px 0 60px -8px rgba(0,0,0,0.6), inset 1px 0 0 rgba(255,255,255,0.06)`,
             }}
             initial={initialPose}
             animate={animatePose}
             exit={exitPose}
-            transition={{ duration: 0.3, ease: EASE_EXPO }}
+            transition={{ duration: 0.4, ease: [0.32, 0, 0.67, 0] }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`detail-title-${node.id}`}
           >
-            {/* Corner L-brackets — draw in once on card mount. */}
-            <div style={{ color }} className="pointer-events-none absolute inset-0 z-10">
-              <Bracket className="top-2 left-2" rotate={0} />
-              <Bracket className="top-2 right-2" rotate={90} />
-              <Bracket className="bottom-2 right-2" rotate={180} />
-              <Bracket className="bottom-2 left-2" rotate={270} />
-            </div>
+            {/* Glass noise overlay — adds texture depth */}
+            <div
+              className="pointer-events-none absolute inset-0 z-0 opacity-[0.03]"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'repeat',
+                backgroundSize: '128px 128px',
+              }}
+              aria-hidden
+            />
+
+            {/* Category colour accent line at top of desktop panel */}
+            {!isMobile && (
+              <div
+                className="shrink-0 h-[2px] w-full relative z-10"
+                style={{ background: `linear-gradient(90deg, transparent, ${color}cc, transparent)` }}
+              />
+            )}
+
+            {/* Corner L-brackets — mobile bottom sheet only */}
+            {isMobile && (
+              <div style={{ color }} className="pointer-events-none absolute inset-0 z-10">
+                <Bracket className="top-2 left-2" rotate={0} />
+                <Bracket className="top-2 right-2" rotate={90} />
+                <Bracket className="bottom-2 right-2" rotate={180} />
+                <Bracket className="bottom-2 left-2" rotate={270} />
+              </div>
+            )}
+
+            {/* Minimize — collapses panel to a slim tab on both desktop and mobile */}
+            <button
+              type="button"
+              onClick={toggleMinimize}
+              aria-label={isMinimized ? 'Expand details' : 'Collapse details'}
+              className="absolute top-3.5 right-20 z-30 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
+            >
+              {isMinimized ? (
+                /* expand — chevron left (open panel) */
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              ) : (
+                /* collapse — chevron right */
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              )}
+            </button>
 
             {/* Copy link */}
             <button
               type="button"
               onClick={copyLink}
               aria-label="Copy link to this neuron"
-              className="absolute top-3.5 right-12 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
+              className="absolute top-3.5 right-12 z-30 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
             >
               <svg
                 width="14"
@@ -297,7 +470,7 @@ export default function DetailCard() {
               type="button"
               onClick={close}
               aria-label="Close details"
-              className="absolute top-3.5 right-3.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
+              className="absolute top-3.5 right-3.5 z-30 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
             >
               <svg
                 width="14"
@@ -345,10 +518,10 @@ export default function DetailCard() {
               variants={contentVariants}
               initial={reducedMotion ? 'visible' : 'hidden'}
               animate="visible"
-              className="relative flex min-h-0 flex-1 flex-col"
+              className="relative z-10 flex min-h-0 flex-1 flex-col"
             >
               {/* ── Fixed header: never scrolls ── */}
-              <div className="shrink-0 px-6 pt-6 pr-10 pb-4">
+              <div className="shrink-0 px-6 pt-6 pr-14 pb-4">
                 {/* Category badge */}
                 <div className="flex items-center gap-2 mb-3">
                   <span
@@ -376,8 +549,19 @@ export default function DetailCard() {
                 </h2>
               </div>
 
-              {/* ── Scrollable body ── */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 pr-10 pb-8 space-y-5 scrollbar-none">
+              {/* ── Scrollable body — collapsible on mobile only ── */}
+              <AnimatePresence initial={false}>
+              {(isMobile ? !isMinimized : true) && (
+              <motion.div
+                key="body"
+                initial={reducedMotion ? { opacity: 1 } : { opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: EASE_EXPO }}
+                style={{ overflow: 'hidden' }}
+                className="min-h-0 flex-1"
+              >
+              <div className="h-full overflow-y-auto px-6 pb-8 space-y-5 scrollbar-none">
               {/* Summary */}
               {node.summary && (
                 <p className="text-sm leading-relaxed text-gray-300">
@@ -400,7 +584,13 @@ export default function DetailCard() {
                       ([key, value]) => (
                         <div
                           key={key}
-                          className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3"
+                          className="rounded-lg p-3"
+                          style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+                          }}
                         >
                           <div className="font-mono-hud text-[9px] uppercase tracking-[0.2em] text-gray-500">
                             {key}
@@ -426,8 +616,10 @@ export default function DetailCard() {
                       className="rounded-md px-2 py-0.5 text-[10px] font-medium"
                       style={{
                         color,
-                        background: `${color}14`,
-                        border: `1px solid ${color}33`,
+                        background: `${color}18`,
+                        border: `1px solid ${color}40`,
+                        backdropFilter: 'blur(6px)',
+                        boxShadow: `inset 0 1px 0 ${color}20`,
                       }}
                     >
                       {tag}
@@ -445,9 +637,10 @@ export default function DetailCard() {
                   className="group inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all hover:brightness-125"
                   style={{
                     color,
-                    background: `${color}18`,
+                    background: `${color}15`,
                     border: `1px solid ${color}50`,
-                    boxShadow: `0 0 18px ${color}33`,
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: `0 0 20px ${color}25, inset 0 1px 0 ${color}20`,
                   }}
                 >
                   Open Link
@@ -486,8 +679,10 @@ export default function DetailCard() {
                           className="rounded-md px-2.5 py-1 text-[11px] font-medium transition-all hover:brightness-125 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--synapse)]"
                           style={{
                             color: nColor,
-                            background: `${nColor}10`,
-                            border: `1px solid ${nColor}30`,
+                            background: `${nColor}12`,
+                            border: `1px solid ${nColor}35`,
+                            backdropFilter: 'blur(6px)',
+                            boxShadow: `inset 0 1px 0 ${nColor}15`,
                           }}
                         >
                           {n.label}
@@ -498,6 +693,9 @@ export default function DetailCard() {
                 </div>
               )}
               </div>
+              </motion.div>
+              )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         </div>

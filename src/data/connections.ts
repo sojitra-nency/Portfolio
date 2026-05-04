@@ -44,6 +44,9 @@ export const connections: NeuralConnection[] = [
   { id: 'c-proj-sentiment', sourceId: 'projects', targetId: 'proj-sentiment', type: 'primary', strength: 0.7 },
   { id: 'c-proj-twiititude', sourceId: 'projects', targetId: 'proj-twiititude', type: 'primary', strength: 0.7 },
   { id: 'c-proj-snakegame', sourceId: 'projects', targetId: 'proj-snakegame', type: 'primary', strength: 0.6 },
+  { id: 'c-proj-leverageguild', sourceId: 'projects', targetId: 'proj-leverageguild', type: 'primary', strength: 0.7 },
+  { id: 'c-proj-mindmystery', sourceId: 'projects', targetId: 'proj-mindmystery', type: 'primary', strength: 0.6 },
+  { id: 'c-proj-dailydose', sourceId: 'projects', targetId: 'proj-dailydose', type: 'primary', strength: 0.6 },
 
   // ─── Experience (Level 1 → 2) ───
   { id: 'c-exp-lanet', sourceId: 'experience', targetId: 'exp-lanet', type: 'primary', strength: 1.0 },
@@ -89,6 +92,12 @@ export const connections: NeuralConnection[] = [
   { id: 'x-opinio-python', sourceId: 'proj-opinio', targetId: 'tool-python', type: 'cross-domain', strength: 0.7 },
   { id: 'x-opinio-ai', sourceId: 'proj-opinio', targetId: 'skill-ai', type: 'cross-domain', strength: 0.7 },
   { id: 'x-sentiment-python', sourceId: 'proj-sentiment', targetId: 'tool-python', type: 'cross-domain', strength: 0.7 },
+  { id: 'x-leverageguild-django', sourceId: 'proj-leverageguild', targetId: 'tool-django', type: 'cross-domain', strength: 0.8 },
+  { id: 'x-leverageguild-ai', sourceId: 'proj-leverageguild', targetId: 'skill-ai', type: 'cross-domain', strength: 0.7 },
+  { id: 'x-mindmystery-python', sourceId: 'proj-mindmystery', targetId: 'tool-python', type: 'cross-domain', strength: 0.6 },
+  { id: 'x-mindmystery-typescript', sourceId: 'proj-mindmystery', targetId: 'tool-typescript', type: 'cross-domain', strength: 0.5 },
+  { id: 'x-dailydose-react', sourceId: 'proj-dailydose', targetId: 'tool-react', type: 'cross-domain', strength: 0.7 },
+  { id: 'x-dailydose-typescript', sourceId: 'proj-dailydose', targetId: 'tool-typescript', type: 'cross-domain', strength: 0.6 },
   // ─── Cross-domain: Experience → Skills ───
   { id: 'x-lanet-langs', sourceId: 'exp-lanet', targetId: 'skill-langs', type: 'cross-domain', strength: 0.9 },
   { id: 'x-lanet-db', sourceId: 'exp-lanet', targetId: 'skill-db', type: 'cross-domain', strength: 0.8 },

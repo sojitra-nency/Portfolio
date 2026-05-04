@@ -54,6 +54,12 @@ export interface GraphState {
    * directly to a child node so it becomes visible in the canvas. */
   expandCluster: (id: string) => void;
 
+  /** Expand every level-1 cluster so all non-hidden nodes are visible. */
+  expandAll: () => void;
+
+  /** Collapse all clusters back to level-0 + level-1 only. */
+  collapseAll: () => void;
+
   /** Write a single node's world position. Creates a new Map reference so
    * `subscribeWithSelector` listeners on `positions` fire correctly. */
   setPosition: (id: string, pos: THREE.Vector3) => void;
@@ -103,6 +109,16 @@ export const useGraphStore = create<GraphState>()(
         next.add(id);
         return { expandedClusters: next };
       }),
+
+    expandAll: () =>
+      set((state) => {
+        const level1Ids = state.nodes
+          .filter((n) => n.level === 1 && !n.isHidden)
+          .map((n) => n.id);
+        return { expandedClusters: new Set(level1Ids) };
+      }),
+
+    collapseAll: () => set({ expandedClusters: new Set() }),
 
     setPosition: (id, pos) =>
       set((state) => {

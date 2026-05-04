@@ -81,11 +81,17 @@ export const HUD_BUTTON_CLASS =
 
 export interface MuteToggleProps {
   className?: string;
+  /** Compact mode — smaller, no border/bg, just an icon button inline with the brand. */
+  compact?: boolean;
 }
 
-export default function MuteToggle({ className }: MuteToggleProps) {
+export default function MuteToggle({ className, compact }: MuteToggleProps) {
   const isMuted = useAudioStore((s) => s.isMuted);
   const setMuted = useAudioStore((s) => s.setMuted);
+
+  const compactClass =
+    'inline-flex h-6 w-6 items-center justify-center rounded-full ' +
+    'text-white/30 hover:text-white/70 transition-colors duration-200';
 
   return (
     <motion.button
@@ -93,12 +99,14 @@ export default function MuteToggle({ className }: MuteToggleProps) {
       onClick={() => setMuted(!isMuted)}
       aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
       aria-pressed={!isMuted}
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.94 }}
-      transition={{ duration: 0.18, ease: EASE_EXPO }}
-      className={`${HUD_BUTTON_CLASS}${className ? ` ${className}` : ''}`}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.92 }}
+      transition={{ duration: 0.15, ease: EASE_EXPO }}
+      className={compact ? `${compactClass}${className ? ` ${className}` : ''}` : `${HUD_BUTTON_CLASS}${className ? ` ${className}` : ''}`}
     >
-      {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
+      <span style={compact ? { transform: 'scale(0.72)', display: 'inline-flex' } : undefined}>
+        {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
+      </span>
     </motion.button>
   );
 }

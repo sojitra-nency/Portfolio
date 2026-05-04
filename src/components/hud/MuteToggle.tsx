@@ -98,7 +98,7 @@ export default function MuteToggle({ className, compact }: MuteToggleProps) {
       type="button"
       onClick={() => setMuted(!isMuted)}
       aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-      aria-pressed={!isMuted}
+      aria-pressed={isMuted}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.92 }}
       transition={{ duration: 0.15, ease: EASE_EXPO }}

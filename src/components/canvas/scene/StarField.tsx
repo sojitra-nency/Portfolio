@@ -15,9 +15,8 @@
  * will consolidate into `useResponsive`.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { getGPUTier } from 'detect-gpu';
 import * as THREE from 'three';
 
 import { useHudStore } from '@/store/useHudStore';
@@ -40,24 +39,6 @@ const PLANES = [
 ] as const;
 
 type PlaneConfig = (typeof PLANES)[number];
-
-// ---------------------------------------------------------------------------
-// GPU tier (local fallback; folded into useResponsive in Task 23)
-// ---------------------------------------------------------------------------
-
-function useGPUTier(): number {
-  const [tier, setTier] = useState<number>(2);
-  useEffect(() => {
-    let cancelled = false;
-    getGPUTier().then((result) => {
-      if (!cancelled) setTier(result.tier ?? 2);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return tier;
-}
 
 // ---------------------------------------------------------------------------
 // Single parallax layer
@@ -170,7 +151,7 @@ function StarPlane({
 // ---------------------------------------------------------------------------
 
 export default function StarField() {
-  const tier = useGPUTier();
+  const tier = useHudStore((s) => s.gpuTier);
   const isMobile = useHudStore((s) => s.isMobile);
   // Halve on tier 0/1 OR on mobile — fewer draw-calls and overdraw on
   // small screens that also tend to have lower fillrate.

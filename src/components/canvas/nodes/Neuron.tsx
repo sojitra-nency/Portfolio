@@ -135,10 +135,16 @@ function Neuron({ node }: NeuronProps) {
     const v = velocityRef.current;
     const reveal = revealRef.current;
     const jitter = Math.max(0, 1 - reveal) * REVEAL_JITTER;
+    // Only call Math.random() when jitter > 0 (during reveal animation).
+    // At steady state (reveal=1) jitter=0, saving 231 random() calls/frame
+    // across 77 neurons.
+    const rx = jitter > 0 ? (Math.random() - 0.5) * jitter : 0;
+    const ry = jitter > 0 ? (Math.random() - 0.5) * jitter : 0;
+    const rz = jitter > 0 ? (Math.random() - 0.5) * jitter : 0;
     groupRef.current.position.set(
-      position.x + v.x + (Math.random() - 0.5) * jitter,
-      position.y + v.y + (Math.random() - 0.5) * jitter,
-      position.z + v.z + (Math.random() - 0.5) * jitter,
+      position.x + v.x + rx,
+      position.y + v.y + ry,
+      position.z + v.z + rz,
     );
     groupRef.current.scale.setScalar(Math.max(0, reveal));
   });

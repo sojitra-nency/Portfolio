@@ -128,7 +128,7 @@ export default function CommTooltip() {
             key="comm-tooltip-mobile"
             role="status"
             aria-live="polite"
-            className={`${pillBase} fixed left-1/2 top-[88px] z-40 -translate-x-1/2 pointer-events-none`}
+            className={`${pillBase} fixed left-1/2 top-20 z-40 -translate-x-1/2 pointer-events-none`}
             variants={commTooltipReveal(reducedMotion)}
             initial="hidden"
             animate="visible"

@@ -11,7 +11,7 @@
  * registers an Escape listener while it's open.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { useHudStore } from '@/store/useHudStore';
@@ -59,11 +59,17 @@ export default function KeyCheatSheet() {
   const isOpen = useHudStore((s) => s.isCheatSheetOpen);
   const setOpen = useHudStore((s) => s.setCheatSheetOpen);
   const reducedMotion = useHudStore((s) => s.isReducedMotion);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Esc closes the sheet when open. (? key toggling is already handled
   // globally by useKeyboardNav.)
   useEffect(() => {
     if (!isOpen) return;
+
+    // Move focus to the close button so keyboard users have a clear entry point.
+    const raf = requestAnimationFrame(() => closeButtonRef.current?.focus());
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -72,7 +78,31 @@ export default function KeyCheatSheet() {
       }
     };
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+
+    // Focus trap — keep Tab cycling inside the card.
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !cardRef.current) return;
+      const focusables = cardRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', onTab);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('keydown', onTab);
+    };
   }, [isOpen, setOpen]);
 
   const cardVariants = reducedMotion
@@ -111,6 +141,7 @@ export default function KeyCheatSheet() {
           aria-labelledby="cheat-sheet-title"
         >
           <motion.div
+            ref={cardRef}
             // Card — stop the click from bubbling to the backdrop.
             className="relative w-full max-w-lg rounded-2xl border border-[color:var(--synapse)]/25 bg-[color:var(--void-warm)]/90 backdrop-blur-xl p-6 shadow-[0_30px_80px_-20px_rgba(124,211,255,0.3)]"
             variants={cardVariants}
@@ -121,6 +152,7 @@ export default function KeyCheatSheet() {
           >
             {/* Close (X) */}
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close cheat sheet"

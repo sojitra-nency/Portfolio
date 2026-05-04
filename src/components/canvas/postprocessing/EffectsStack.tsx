@@ -30,7 +30,6 @@ import {
   Vignette,
 } from '@react-three/postprocessing';
 import { BlendFunction, ChromaticAberrationEffect } from 'postprocessing';
-import { getGPUTier } from 'detect-gpu';
 import * as THREE from 'three';
 
 import { useCinemaStore } from '@/store/useCinemaStore';
@@ -58,29 +57,11 @@ const VIGNETTE_DARKNESS = 0.75;
 const MOBILE_BREAKPOINT = 768;
 
 // ---------------------------------------------------------------------------
-// Local GPU-tier hook (Task 23 will consolidate into useResponsive).
-// ---------------------------------------------------------------------------
-
-function useGPUTier(): number {
-  const [tier, setTier] = useState<number>(2);
-  useEffect(() => {
-    let cancelled = false;
-    getGPUTier().then((result) => {
-      if (!cancelled) setTier(result.tier ?? 2);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return tier;
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function EffectsStack() {
-  const tier = useGPUTier();
+  const tier = useHudStore((s) => s.gpuTier);
   const scene = useThree((s) => s.scene);
   const isMobile = useThree((s) => s.size.width < MOBILE_BREAKPOINT);
   const mode = useCinemaStore((s) => s.mode);
@@ -121,23 +102,32 @@ export default function EffectsStack() {
     chromaticEffect.offset.set(value, value);
   });
 
-  // SelectiveBloom requires an explicit `lights` array. The scene lighting rig
-  // and postprocessing can initialize in the same commit, so we discover the
-  // lights lazily and mount bloom only after we have them.
-  useFrame(() => {
+  // SelectiveBloom requires an explicit `lights` array. Traverse the scene
+  // ONCE in a useEffect (after first render) instead of every frame — the
+  // scene.traverse inside useFrame was costing ~0.2ms/frame for the first
+  // several seconds while it waited for lights to appear, then calling
+  // setState which triggered a full EffectsStack re-render mid-frame.
+  useEffect(() => {
     if (bloomLights.length > 0) return;
-
     const nextLights: THREE.Object3D[] = [];
     scene.traverse((object) => {
       if ((object as THREE.Object3D & { isLight?: boolean }).isLight) {
         nextLights.push(object);
       }
     });
-
-    if (nextLights.length > 0) {
-      setBloomLights(nextLights);
-    }
-  });
+    if (nextLights.length > 0) setBloomLights(nextLights);
+    // Retry after 500ms if lights haven't mounted yet (SceneLighting is lazy).
+    const t = setTimeout(() => {
+      if (bloomLights.length > 0) return;
+      const retry: THREE.Object3D[] = [];
+      scene.traverse((o) => {
+        if ((o as THREE.Object3D & { isLight?: boolean }).isLight) retry.push(o);
+      });
+      if (retry.length > 0) setBloomLights(retry);
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene]);
 
   // Entirely skip post-processing on low-end GPUs.
   if (tier <= 1) return null;

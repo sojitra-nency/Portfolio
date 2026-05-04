@@ -50,23 +50,26 @@ html, body {
   color: var(--foreground);
 }
 
-/* Selection color */
+/* Selection color — matches synapse cyan for consistency */
 ::selection {
-  background: rgba(255, 215, 0, 0.3);
+  background: rgba(124, 211, 255, 0.3);
   color: #fff;
 }
 
-/* Focus styles */
+/* Focus styles — use the synapse cyan consistent with HUD focus rings */
 :focus-visible {
-  outline: 2px solid #FFD700;
+  outline: 2px solid var(--synapse);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Smooth transitions globally */
+/* Smooth transitions for interactive elements only.
+   Intentionally NOT applied to all * — that causes backdrop-blur elements
+   to flash on mount because opacity transitions fire before the blur
+   compositing layer is ready. Scoped to non-canvas elements only. */
 @media (prefers-reduced-motion: no-preference) {
-  * {
-    transition-property: color, background-color, border-color, opacity;
+  button, a, input, select, textarea, [role="button"] {
+    transition-property: color, background-color, border-color;
     transition-duration: 150ms;
     transition-timing-function: ease;
   }

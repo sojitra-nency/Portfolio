@@ -275,51 +275,71 @@ export default function DetailCard() {
     };
   }, []);
 
-  // Mobile: bottom sheet. Desktop: full-height right panel with dynamic width.
-  // No pointer-events-none on wrapper — the panel IS the interactive area.
-  const wrapperClasses = isMobile
-    ? 'fixed inset-x-0 bottom-0 z-40 flex items-end pointer-events-none'
-    : isMinimized
-    ? 'fixed top-24 bottom-6 right-0 z-40 flex'
-    : 'fixed inset-y-0 right-0 z-40 flex';
-
-  const cardBase =
-    'relative flex flex-col bg-white/[0.04] backdrop-blur-2xl';
-  const cardSizing = isMobile
-    ? isMinimized
-      ? 'w-full rounded-t-2xl overflow-hidden pointer-events-auto'
-      : 'w-full h-[65vh] rounded-t-2xl overflow-hidden pointer-events-auto'
-    : 'h-full overflow-hidden pointer-events-auto flex-1';
-
-  // Direction-specific enter/exit.
-  const initialPose = reducedMotion
-    ? false
-    : isMobile
-    ? { opacity: 0, y: 48 }
-    : { opacity: 0, x: panelWidth };
-  const animatePose = { opacity: 1, x: 0, y: 0, scale: 1 };
-  const exitPose = reducedMotion
-    ? { opacity: 0 }
-    : isMobile
-    ? { opacity: 0, y: 48 }
-    : { opacity: 0, x: panelWidth };
-
   return (
+    <>
+    {/* ── Minimized tab — rendered as a completely separate fixed element,
+        totally independent from the main panel. This is the key fix: the
+        tab and panel never share a container, so toggling minimize cannot
+        cause the panel's backdrop-blur layer to flash or reflow. */}
     <AnimatePresence>
-      {isVisible && node && (
-        <div
-          ref={wrapperRef}
-          className={wrapperClasses}
-          style={!isMobile ? { width: isMinimized ? 40 : panelWidth, flexShrink: 0 } : undefined}
+      {isVisible && node && !isMobile && isMinimized && (
+        <motion.button
+          key="minimized-tab"
+          type="button"
+          onClick={toggleMinimize}
+          aria-label="Expand detail panel"
+          // Slide in from right on mount. Exit is instant (duration 0) so
+          // the tab doesn't animate out while the full panel animates in —
+          // running both simultaneously caused the visible lag on expand.
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 0, transition: { duration: 0 } }}
+          transition={{ duration: 0.18, ease: EASE_EXPO }}
+          className="fixed inset-y-0 right-0 z-40 w-10 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/[0.04] transition-colors duration-150"
+          style={{
+            background: 'rgba(8,8,20,0.97)',
+            borderLeft: `2px solid ${color}`,
+            boxShadow: `0 0 20px ${color}40, -4px 0 24px rgba(0,0,0,0.5)`,
+          }}
         >
-          {/* Resize handle — left edge, desktop only, hidden when minimized */}
-          {!isMobile && !isMinimized && (
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color, boxShadow: `0 0 10px ${color}` }} />
+          <span
+            className="font-mono-hud text-[10px] uppercase tracking-[0.18em] flex-shrink-0"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'rgba(255,255,255,0.6)', maxHeight: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {node.label}
+          </span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color, opacity: 0.7, flexShrink: 0 }} aria-hidden>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </motion.button>
+      )}
+    </AnimatePresence>
+
+    {/* ── Main panel — the motion.div IS the direct AnimatePresence child so
+        Framer controls the full mount/unmount. No plain div wrapper in between
+        — that was breaking AnimatePresence exit and leaving a 420px black void. */}
+    <AnimatePresence>
+      {isVisible && node && (!isMinimized || isMobile) && (
+        <motion.div
+          key="detail-panel"
+          ref={wrapperRef}
+          className={isMobile
+            ? 'fixed inset-x-0 bottom-0 z-40 flex items-end pointer-events-none'
+            : 'fixed inset-y-0 right-0 z-40 flex'}
+          style={!isMobile ? { width: panelWidth, flexShrink: 0 } : undefined}
+          initial={reducedMotion ? false : isMobile ? { opacity: 0, y: 48 } : { opacity: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reducedMotion ? { opacity: 0 } : isMobile ? { opacity: 0, y: 48 } : { opacity: 0 }}
+          transition={{ duration: isMobile ? 0.22 : 0.12, ease: EASE_EXPO }}
+        >
+          {/* Resize handle — left edge, desktop only */}
+          {!isMobile && (
             <div
               onPointerDown={startResize}
               className="absolute left-0 inset-y-0 w-3 z-50 cursor-ew-resize flex items-center justify-center group"
               aria-hidden
             >
-              {/* Visible grip line */}
               <div
                 className="w-[2px] h-16 rounded-full opacity-20 group-hover:opacity-80 group-hover:h-24 transition-all duration-150"
                 style={{ background: color }}
@@ -327,81 +347,30 @@ export default function DetailCard() {
             </div>
           )}
 
-          {/* Minimized tab — glass tile with rotated label */}
-          {!isMobile && isMinimized && (
-            <button
-              type="button"
-              onClick={toggleMinimize}
-              aria-label="Expand detail panel"
-              className="w-full h-full flex flex-col items-center py-4 gap-4 cursor-pointer transition-all duration-150 hover:bg-white/[0.06]"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                borderLeft: `2px solid ${color}`,
-                boxShadow: `inset -1px 0 0 rgba(255,255,255,0.05), -4px 0 20px rgba(0,0,0,0.4)`,
-              }}
-            >
-              {/* Colour dot */}
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ background: color, boxShadow: `0 0 8px ${color}` }}
-              />
-              {/* Node label rotated bottom-to-top */}
-              <span
-                className="font-mono-hud text-[10px] uppercase tracking-[0.18em] flex-shrink-0"
-                style={{
-                  writingMode: 'vertical-rl',
-                  transform: 'rotate(180deg)',
-                  color: 'rgba(255,255,255,0.7)',
-                  maxHeight: '180px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {node.label}
-              </span>
-              {/* Expand chevron at bottom */}
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: `${color}`, opacity: 0.8, flexShrink: 0 }} aria-hidden>
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          )}
-
-          {/* Full panel — hidden when desktop-minimized */}
-          <motion.div
+          {/* Inner panel surface — solid background, no backdrop-blur.
+              backdrop-blur creates a GPU compositing layer that cannot fade
+              cleanly with opacity and always shows as a dark rectangle during
+              transitions regardless of animation duration. */}
+          <div
             ref={cardRef}
-            className={`${cardBase} ${cardSizing} ${!isMobile && isMinimized ? 'hidden' : ''}`}
+            className={isMobile
+              ? 'relative flex flex-col w-full h-[65vh] rounded-t-2xl overflow-hidden pointer-events-auto'
+              : 'relative flex flex-col h-full overflow-hidden pointer-events-auto flex-1'}
             style={isMobile ? {
-              background: 'rgba(255,255,255,0.04)',
+              background: 'rgba(8,8,20,0.96)',
               border: `1px solid rgba(255,255,255,0.1)`,
               boxShadow: `0 20px 60px -20px ${color}40, inset 0 1px 0 rgba(255,255,255,0.08)`,
             } : {
               width: '100%',
-              background: 'rgba(255,255,255,0.04)',
+              background: 'rgba(8,8,20,0.97)',
               borderLeft: `1px solid rgba(255,255,255,0.08)`,
               borderTop: `1px solid rgba(255,255,255,0.06)`,
               boxShadow: `-16px 0 60px -8px rgba(0,0,0,0.6), inset 1px 0 0 rgba(255,255,255,0.06)`,
             }}
-            initial={initialPose}
-            animate={animatePose}
-            exit={exitPose}
-            transition={{ duration: 0.4, ease: [0.32, 0, 0.67, 0] }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`detail-title-${node.id}`}
           >
-            {/* Glass noise overlay — adds texture depth */}
-            <div
-              className="pointer-events-none absolute inset-0 z-0 opacity-[0.03]"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '128px 128px',
-              }}
-              aria-hidden
-            />
 
             {/* Category colour accent line at top of desktop panel */}
             {!isMobile && (
@@ -697,9 +666,10 @@ export default function DetailCard() {
               )}
               </AnimatePresence>
             </motion.div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+          </div>
+        </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

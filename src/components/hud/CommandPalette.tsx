@@ -131,26 +131,35 @@ export default function CommandPalette() {
   const reducedMotion = useHudStore((s) => s.isReducedMotion);
 
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [highlighted, setHighlighted] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Debounce the Fuse search so rapid typing doesn't trigger O(n) searches
+  // on every keystroke — 120 ms is imperceptible but halves search calls.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 120);
+    return () => clearTimeout(t);
+  }, [query]);
+
   const results = useMemo<NeuralNode[]>(() => {
-    if (!query.trim()) {
+    if (!debouncedQuery.trim()) {
       // Empty query — show all level-0 and level-1 nodes as defaults.
       return allNodes
         .filter((n) => n.level <= 1 && !n.isHidden)
         .slice(0, MAX_RESULTS);
     }
     return fuse
-      .search(query)
+      .search(debouncedQuery)
       .slice(0, MAX_RESULTS)
       .map((r) => r.item);
-  }, [query]);
+  }, [debouncedQuery]);
 
   // Reset state when palette opens.
   useEffect(() => {
     if (!isOpen) return;
     setQuery('');
+    setDebouncedQuery('');
     setHighlighted(0);
     // Defer focus so Framer's enter animation has started.
     const raf = requestAnimationFrame(() => inputRef.current?.focus());

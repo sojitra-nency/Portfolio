@@ -28,32 +28,34 @@ export default function ConnectionsLayer() {
   const connections = useGraphStore((s) => s.connections);
   const nodes = useGraphStore((s) => s.nodes);
   const expandedClusters = useGraphStore((s) => s.expandedClusters);
+  const unlockedNodes = useExplorationStore((s) => s.unlockedNodes);
 
-  // Stable id → node index; `nodes` is immutable post-seed so this
-  // builds once per mount.
+  // Stable id → node lookup; nodes array is immutable post-seed.
   const nodeById = useMemo(
     () => new Map(nodes.map((n) => [n.id, n])),
     [nodes],
   );
 
-  // Derive visible ids from the same source the network uses so a
-  // connection is rendered iff both its neurons are. Includes unlocked
-  // hidden nodes so edges to freshly-revealed neurons show up.
-  const unlockedNodes = useExplorationStore((s) => s.unlockedNodes);
-  const visibleIds = useMemo(() => {
-    const base = useGraphStore.getState().getVisibleNodes();
-    const all = useGraphStore.getState().nodes;
-    const unlockedHidden = all.filter(
-      (n) => n.isHidden && unlockedNodes.has(n.id),
-    );
-    return new Set([...base, ...unlockedHidden].map((n) => n.id));
-  }, [expandedClusters, unlockedNodes]);
-
+  // Build visible id set directly from the subscribed state values instead
+  // of calling getState() inside the memo (which bypasses Zustand's
+  // subscription and can read stale data). Combining both memos into one
+  // also halves the number of useMemo evaluations on cluster expand.
   const visibleConnections = useMemo(() => {
+    // Visible node ids: level 0/1 always visible, level 2+ only when their
+    // parent cluster is expanded, plus any unlocked hidden nodes.
+    const visibleIds = new Set<string>();
+    for (const n of nodes) {
+      if (n.isHidden) {
+        if (unlockedNodes.has(n.id)) visibleIds.add(n.id);
+        continue;
+      }
+      if (n.level <= 1) { visibleIds.add(n.id); continue; }
+      if (n.parentId && expandedClusters.has(n.parentId)) visibleIds.add(n.id);
+    }
     return connections.filter(
       (c) => visibleIds.has(c.sourceId) && visibleIds.has(c.targetId),
     );
-  }, [connections, visibleIds]);
+  }, [nodes, connections, expandedClusters, unlockedNodes]);
 
   return (
     <>

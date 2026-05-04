@@ -10,6 +10,10 @@ import { EASE_EXPO } from '@/lib/neural-motion';
 export default function QuickViewPortal() {
   const router = useRouter();
   const reducedMotion = useHudStore((s) => s.isReducedMotion);
+  const isDetailMinimized = useHudStore((s) => s.isDetailMinimized);
+  const isDetailOpen = useHudStore((s) => s.isDetailOpen);
+  // When the minimized tab is showing (40px wide), shift the button left.
+  const tabVisible = isDetailMinimized && isDetailOpen;
   const [isPoweringDown, setIsPoweringDown] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -23,10 +27,10 @@ export default function QuickViewPortal() {
   return (
     <>
       <motion.div
-        className="fixed bottom-6 right-6 z-30 pointer-events-auto"
+        className="fixed bottom-6 z-30 pointer-events-auto"
         initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3, ease: EASE_EXPO }}
+        animate={{ opacity: 1, y: 0, right: tabVisible ? 56 : 24 }}
+        transition={{ duration: tabVisible ? 0.18 : 0.5, delay: tabVisible ? 0 : 0.3, ease: EASE_EXPO }}
       >
         {/* Outer glow bloom — always on, pulses */}
         {!reducedMotion && (

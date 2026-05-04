@@ -15,9 +15,8 @@
  * rule-of-hooks happy; `useFrame` short-circuits and render returns null.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { getGPUTier } from 'detect-gpu';
 import * as THREE from 'three';
 
 import { useHudStore } from '@/store/useHudStore';
@@ -33,24 +32,6 @@ const INACTIVE_COUNT_MOBILE = 1;
 const SPEED_INACTIVE = 0.3;
 const SPEED_ACTIVE = 0.6;
 const POINT_SIZE = 0.22;
-
-// ---------------------------------------------------------------------------
-// GPU tier (local fallback — folded into useResponsive in Task 23)
-// ---------------------------------------------------------------------------
-
-function useGPUTier(): number {
-  const [tier, setTier] = useState<number>(2);
-  useEffect(() => {
-    let cancelled = false;
-    getGPUTier().then((result) => {
-      if (!cancelled) setTier(result.tier ?? 2);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return tier;
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -71,7 +52,7 @@ export default function EnergyParticles({
   active,
   color,
 }: EnergyParticlesProps) {
-  const tier = useGPUTier();
+  const tier = useHudStore((s) => s.gpuTier);
   const isMobile = useHudStore((s) => s.isMobile);
   const skip = tier <= 1;
 

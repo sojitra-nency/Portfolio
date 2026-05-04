@@ -188,5 +188,9 @@ export function geometryFor(
       return cached('contact', buildContact);
     case 'tools':
       return cached('tools', buildTools);
+    default:
+      // Exhaustive fallback — TypeScript's narrowing should catch unknown
+      // categories at compile time; this guards against runtime data drift.
+      return cached('about', buildAbout);
   }
 }

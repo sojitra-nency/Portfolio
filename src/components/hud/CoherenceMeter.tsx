@@ -118,7 +118,13 @@ export default function CoherenceMeter() {
         className="fixed top-[72px] left-6 z-30 pointer-events-none"
       >
         <div className="relative" style={{ width: SIZE, height: SIZE }}>
-          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <svg
+            width={SIZE}
+            height={SIZE}
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
+            role="img"
+            aria-label={`Neural coherence: ${Math.round(percent)}%`}
+          >
             <defs>
               <linearGradient
                 id="coherence-gradient"

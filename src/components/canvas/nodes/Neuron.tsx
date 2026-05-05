@@ -157,10 +157,20 @@ function Neuron({ node }: NeuronProps) {
   );
 
   const color = CATEGORY_COLORS[node.category];
+  // Leaf nodes (level 2+) get a warm orange-amber halo contrasting the cool
+  // blue dendrites, matching the bioluminescent reference image's terminal glow.
+  const haloColor = node.level >= 2 ? '#FF7D3B' : color;
   const size = node.size ?? SIZE_BY_LEVEL[node.level];
+  // Halo scale subordinated to the central star + dendrite art layer.
+  // The central star (CentralStar.tsx) now provides the dominant glow at origin,
+  // so node halos are dialled back to remain part of the composition.
+  const haloScale = node.level === 0 ? 5.0 : node.level === 1 ? 3.5 : 2.5;
   // Steady activation multiplier: 0 idle, 0.6 hover, 1 active.
   const state = isActive ? 1 : isHovered ? 0.6 : 0;
-  const showLabel = node.level <= 2 || isHovered || isActive;
+  // Hide labels by default — only the core (level 0) shows persistently.
+  // Other nodes reveal their label on hover/active. Keeps the composition
+  // clean and matches the reference image's pure-art aesthetic.
+  const showLabel = node.level === 0 || isHovered || isActive;
 
   // ── Pointer handlers ────────────────────────────────────────────────────
   //
@@ -286,10 +296,11 @@ function Neuron({ node }: NeuronProps) {
         geometry={geometry}
       />
       <NeuronHalo
-        color={color}
+        color={haloColor}
         pulseRef={pulseRef}
         scale={size}
         opacity={isHovered || isActive ? 1 : 0.85}
+        haloScaleOverride={haloScale}
       />
       {showLabel && (
         <Html

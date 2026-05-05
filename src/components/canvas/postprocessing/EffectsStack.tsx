@@ -4,7 +4,7 @@
  * EffectsStack — the Neural View's post-processing pipeline.
  *
  * Pipeline (ordered):
- *   1. SelectiveBloom    — layer-1 bloom (halos, firing edges).
+ *   1. Bloom             — luminance-threshold bloom on all bright pixels.
  *   2. DepthOfField      — focus on `useCinemaStore.focusTarget`, bokeh
  *                          scales with cinema mode. Disabled on mobile
  *                          and GPU tier < 2.
@@ -15,16 +15,13 @@
  *   5. Vignette          — classic edge darkening.
  *
  * All effects entirely disabled on GPU tier 0/1 (component returns null).
- *
- * The local `useGPUTier` hook mirrors the pattern used in StarField and
- * EnergyParticles — Task 23 folds all three into `useResponsive`.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
   EffectComposer,
-  SelectiveBloom,
+  Bloom,
   DepthOfField,
   Noise,
   Vignette,
@@ -39,20 +36,23 @@ import { useHudStore, CHROMATIC_SPIKE_DURATION } from '@/store/useHudStore';
 // Tunables
 // ---------------------------------------------------------------------------
 
-const BLOOM_INTENSITY_TIER2 = 0.5;
-const BLOOM_INTENSITY_TIER3 = 1.1;
-const BLOOM_LUMINANCE_THRESHOLD = 0.2;
+const BLOOM_INTENSITY_TIER2 = 1.0;
+const BLOOM_INTENSITY_TIER3 = 1.4;
+const BLOOM_LUMINANCE_THRESHOLD = 0.45;
+const BLOOM_LUMINANCE_SMOOTHING = 0.6;
 
 const BOKEH_AMBIENT = 1.2;
 const BOKEH_FOCUS = 3.0;
 
-const CHROMATIC_BASE = 0.0008;
-const CHROMATIC_PEAK = 0.003;
+// Disabled — chromatic aberration was producing heavy RGB fringing on every
+// dendrite, making the scene look glitchy. Reference image has clean lines.
+const CHROMATIC_BASE = 0.0;
+const CHROMATIC_PEAK = 0.0008;
 
 const NOISE_OPACITY = 0.035;
 
-const VIGNETTE_OFFSET = 0.3;
-const VIGNETTE_DARKNESS = 0.75;
+const VIGNETTE_OFFSET = 0.25;
+const VIGNETTE_DARKNESS = 0.90;
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -62,22 +62,14 @@ const MOBILE_BREAKPOINT = 768;
 
 export default function EffectsStack() {
   const tier = useHudStore((s) => s.gpuTier);
-  const scene = useThree((s) => s.scene);
   const isMobile = useThree((s) => s.size.width < MOBILE_BREAKPOINT);
   const mode = useCinemaStore((s) => s.mode);
   const focusTarget = useCinemaStore((s) => s.focusTarget);
-  const [bloomLights, setBloomLights] = useState<THREE.Object3D[]>([]);
 
-  // Stable fallback target for DoF when nothing is focused — mutated
-  // never, so DepthOfField reuses the same Vector3 across re-renders.
+  // Stable fallback target for DoF when nothing is focused.
   const originTarget = useMemo(() => new THREE.Vector3(0, 0, 0), []);
   const dofTarget = focusTarget ?? originTarget;
 
-  // Ref to the underlying ChromaticAberrationEffect so we can mutate
-  // its offset uniform each frame without triggering React re-renders.
-  // We instantiate the effect directly instead of using the
-  // <ChromaticAberration /> wrapper because that wrapper stringifies props;
-  // in React 19, passing `ref` as a prop can produce a cyclic object error.
   const chromaticEffect = useMemo(
     () =>
       new ChromaticAberrationEffect({
@@ -102,62 +94,25 @@ export default function EffectsStack() {
     chromaticEffect.offset.set(value, value);
   });
 
-  // SelectiveBloom requires an explicit `lights` array. Traverse the scene
-  // ONCE in a useEffect (after first render) instead of every frame — the
-  // scene.traverse inside useFrame was costing ~0.2ms/frame for the first
-  // several seconds while it waited for lights to appear, then calling
-  // setState which triggered a full EffectsStack re-render mid-frame.
-  useEffect(() => {
-    if (bloomLights.length > 0) return;
-    const nextLights: THREE.Object3D[] = [];
-    scene.traverse((object) => {
-      if ((object as THREE.Object3D & { isLight?: boolean }).isLight) {
-        nextLights.push(object);
-      }
-    });
-    if (nextLights.length > 0) setBloomLights(nextLights);
-    // Retry after 500ms if lights haven't mounted yet (SceneLighting is lazy).
-    const t = setTimeout(() => {
-      if (bloomLights.length > 0) return;
-      const retry: THREE.Object3D[] = [];
-      scene.traverse((o) => {
-        if ((o as THREE.Object3D & { isLight?: boolean }).isLight) retry.push(o);
-      });
-      if (retry.length > 0) setBloomLights(retry);
-    }, 500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene]);
+  // Only skip on tier 0 (completely incapable GPU). Tier 1 still gets bloom.
+  if (tier <= 0) return null;
 
-  // Entirely skip post-processing on low-end GPUs.
-  if (tier <= 1) return null;
-
-  // Mobile treats every device as at-most tier 2 regardless of what
-  // detect-gpu reports — prevents a high-end phone from burning fillrate
-  // on tier-3 bloom intensity and DoF that's wasted on a small viewport.
   const effectiveTier = isMobile ? Math.min(tier, 2) : tier;
 
   const bloomIntensity =
     effectiveTier >= 3 ? BLOOM_INTENSITY_TIER3 : BLOOM_INTENSITY_TIER2;
   const bokehScale = mode === 'focus' ? BOKEH_FOCUS : BOKEH_AMBIENT;
   const dofEnabled = effectiveTier >= 2 && !isMobile;
-  // ChromaticAberration costs a full-screen pass and a uniform update
-  // every frame — skip it on mobile regardless of tier.
   const chromaticEnabled = !isMobile;
 
   return (
     <EffectComposer>
-      {bloomLights.length > 0 ? (
-        <SelectiveBloom
-          lights={bloomLights}
-          selectionLayer={1}
-          intensity={bloomIntensity}
-          luminanceThreshold={BLOOM_LUMINANCE_THRESHOLD}
-          mipmapBlur
-        />
-      ) : (
-        <></>
-      )}
+      <Bloom
+        intensity={bloomIntensity}
+        luminanceThreshold={BLOOM_LUMINANCE_THRESHOLD}
+        luminanceSmoothing={BLOOM_LUMINANCE_SMOOTHING}
+        mipmapBlur
+      />
       {dofEnabled ? (
         <DepthOfField
           target={dofTarget}

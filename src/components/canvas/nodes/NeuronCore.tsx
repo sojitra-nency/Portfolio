@@ -35,7 +35,7 @@ const NeuronCoreMaterial = createShaderMaterial({
     uColor: new THREE.Color('#FFFFFF'),
     uPulse: 0,
     uState: 0,
-    uNoiseAmp: 0.08,
+    uNoiseAmp: 0.12,
     uTime: 0,
   },
 });
@@ -73,7 +73,7 @@ export default function NeuronCore({
   size,
   geometry,
   detail = 1,
-  noiseAmp = 0.08,
+  noiseAmp = 0.12,
 }: NeuronCoreProps) {
   // Fresh material instance per mount. drei's shaderMaterial clones
   // uniform values, so uColor / uPulse / uState won't leak between neurons.

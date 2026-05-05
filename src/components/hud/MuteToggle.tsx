@@ -71,7 +71,7 @@ export const HUD_BUTTON_CLASS =
   'border border-white/10 bg-white/[0.03] backdrop-blur-md ' +
   'text-white/75 transition-colors duration-200 ' +
   'hover:text-white hover:border-[color:var(--synapse)]/40 ' +
-  'hover:bg-[color:var(--synapse)]/10 hover:shadow-[0_0_18px_rgba(124,211,255,0.22)] ' +
+  'hover:bg-[color:var(--synapse)]/10 hover:shadow-[0_0_18px_rgba(91,143,255,0.22)] ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2 ' +
   'focus-visible:outline-[color:var(--synapse)]';
 

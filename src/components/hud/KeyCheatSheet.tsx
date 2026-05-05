@@ -143,7 +143,7 @@ export default function KeyCheatSheet() {
           <motion.div
             ref={cardRef}
             // Card — stop the click from bubbling to the backdrop.
-            className="relative w-full max-w-lg rounded-2xl border border-[color:var(--synapse)]/25 bg-[color:var(--void-warm)]/90 backdrop-blur-xl p-6 shadow-[0_30px_80px_-20px_rgba(124,211,255,0.3)]"
+            className="relative w-full max-w-lg rounded-2xl border border-[color:var(--synapse)]/25 bg-[color:var(--void-warm)]/90 backdrop-blur-xl p-6 shadow-[0_30px_80px_-20px_rgba(91,143,255,0.3)]"
             variants={cardVariants}
             initial="hidden"
             animate="visible"
@@ -177,7 +177,7 @@ export default function KeyCheatSheet() {
             <div className="mb-5 flex items-center gap-2.5">
               <span
                 aria-hidden
-                className="h-2 w-2 rounded-full bg-[var(--synapse)] shadow-[0_0_10px_rgba(124,211,255,0.7)]"
+                className="h-2 w-2 rounded-full bg-[var(--synapse)] shadow-[0_0_10px_rgba(91,143,255,0.7)]"
               />
               <h2
                 id="cheat-sheet-title"

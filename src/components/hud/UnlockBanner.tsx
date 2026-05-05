@@ -72,7 +72,7 @@ export default function UnlockBanner() {
         >
           <div
             className="flex items-center gap-3 rounded-full border border-[color:var(--synapse)]/50 bg-[color:var(--void-warm)]/90 backdrop-blur-lg px-6 py-2.5"
-            style={{ boxShadow: '0 0 48px rgba(124, 211, 255, 0.4)' }}
+            style={{ boxShadow: '0 0 48px rgba(91, 143, 255, 0.4)' }}
           >
             <span
               aria-hidden

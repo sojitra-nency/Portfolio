@@ -241,7 +241,7 @@ export default function CommandPalette() {
             transition={{ duration: 0.2, ease: EASE_EXPO }}
           >
             <div className="pointer-events-auto w-[min(560px,90vw)]">
-            <div className="rounded-xl border border-[color:var(--synapse)]/25 bg-[color:var(--void-warm)]/90 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(124,211,255,0.25)] overflow-hidden">
+            <div className="rounded-xl border border-[color:var(--synapse)]/25 bg-[color:var(--void-warm)]/90 backdrop-blur-xl shadow-[0_30px_80px_-20px_rgba(91,143,255,0.25)] overflow-hidden">
 
               {/* Search input */}
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">

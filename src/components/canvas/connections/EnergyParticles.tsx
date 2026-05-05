@@ -25,13 +25,16 @@ import { useHudStore } from '@/store/useHudStore';
 // Config
 // ---------------------------------------------------------------------------
 
-const MAX_PARTICLES_DESKTOP = 6;
-const INACTIVE_COUNT_DESKTOP = 3;
-const MAX_PARTICLES_MOBILE = 3;
-const INACTIVE_COUNT_MOBILE = 1;
-const SPEED_INACTIVE = 0.3;
-const SPEED_ACTIVE = 0.6;
-const POINT_SIZE = 0.22;
+const MAX_PARTICLES_DESKTOP = 8;
+const INACTIVE_COUNT_DESKTOP = 4;
+const MAX_PARTICLES_MOBILE = 4;
+const INACTIVE_COUNT_MOBILE = 2;
+const SPEED_INACTIVE = 0.4;
+const SPEED_ACTIVE = 0.8;
+const POINT_SIZE = 0.32;
+// Warm white sparks travel along cool-blue dendrites — the contrast matches
+// the reference image's bioluminescent terminal glow.
+const PARTICLE_COLOR = '#FFF5E0';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -50,7 +53,8 @@ export interface EnergyParticlesProps {
 export default function EnergyParticles({
   curve,
   active,
-  color,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  color: _color,
 }: EnergyParticlesProps) {
   const tier = useHudStore((s) => s.gpuTier);
   const isMobile = useHudStore((s) => s.isMobile);
@@ -86,19 +90,13 @@ export default function EnergyParticles({
       new THREE.PointsMaterial({
         size: POINT_SIZE,
         sizeAttenuation: true,
-        color: new THREE.Color(color),
+        color: new THREE.Color(PARTICLE_COLOR),
         transparent: true,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       }),
-    // Color is synced via useEffect below — material is constructed once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-
-  useEffect(() => {
-    material.color.set(color);
-  }, [color, material]);
 
   // Flip draw range when active toggles.
   useEffect(() => {

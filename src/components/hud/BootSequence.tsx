@@ -133,27 +133,39 @@ export default function BootSequence() {
       onClick={handleDismiss}
       aria-hidden="false"
     >
-      {/* Phase 1 — center pulse */}
+      {/* Phase 1 — neuron birth: white-hot center star blooming outward */}
       {phase === 'pulse' && (
-        <motion.div
-          className="h-4 w-4 rounded-full bg-[var(--synapse)]"
-          style={{
-            boxShadow: '0 0 48px rgba(124, 211, 255, 0.9)',
-          }}
-          initial={{ scale: 0, opacity: 1 }}
-          animate={{ scale: [0, 1, 0], opacity: [1, 1, 0] }}
-          transition={{
-            duration: PULSE_DURATION,
-            ease: EASE_EXPO,
-            times: [0, 0.5, 1],
-          }}
-          onAnimationComplete={() => setPhase('typing')}
-        />
+        <div className="relative flex items-center justify-center">
+          {/* Outer bloom halo — radial gradient background */}
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: '160px',
+              height: '160px',
+              background: 'radial-gradient(circle, rgba(91,143,255,0.20) 0%, rgba(153,102,255,0.08) 40%, transparent 70%)',
+            }}
+          />
+          <motion.div
+            className="h-4 w-4 rounded-full"
+            style={{
+              background: '#FFFFFF',
+              boxShadow: '0 0 40px 8px #5B8FFF, 0 0 80px 16px rgba(91,143,255,0.5), 0 0 120px 32px rgba(91,143,255,0.2)',
+            }}
+            initial={{ scale: 0, opacity: 1 }}
+            animate={{ scale: [0, 1, 0], opacity: [1, 1, 0] }}
+            transition={{
+              duration: PULSE_DURATION,
+              ease: EASE_EXPO,
+              times: [0, 0.5, 1],
+            }}
+            onAnimationComplete={() => setPhase('typing')}
+          />
+        </div>
       )}
 
       {/* Phases 2/3 — terminal lines */}
       {phase !== 'pulse' && (
-        <div className="font-mono-hud text-[13px] text-[var(--synapse)] w-full max-w-xl px-8 space-y-2">
+        <div className="font-mono-hud text-[13px] text-[var(--synapse)] w-full max-w-xl px-8 space-y-2" style={{ color: '#5B8FFF' }}>
           {LINES.map((line, i) => {
             const offset = lineOffsets[i];
             const remaining = charsSoFar - offset;

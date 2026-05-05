@@ -38,8 +38,8 @@ function CtrlBtn({
         transition={{ duration: 0.14, ease: EASE_EXPO }}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-150"
         style={{
-          background: active ? 'rgba(124,211,255,0.12)' : 'transparent',
-          color: hovered ? 'rgba(255,255,255,0.9)' : active ? 'rgba(124,211,255,0.9)' : 'rgba(255,255,255,0.5)',
+          background: active ? 'rgba(91,143,255,0.12)' : 'transparent',
+          color: hovered ? 'rgba(255,255,255,0.9)' : active ? 'rgba(91,143,255,0.9)' : 'rgba(255,255,255,0.5)',
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -199,7 +199,7 @@ export default function CanvasControls() {
 
   return (
     <motion.div
-      className="absolute bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-none"
+      className="absolute bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-none opacity-50 hover:opacity-100 transition-opacity duration-300"
       variants={hudEnter(reducedMotion)}
       initial="hidden"
       animate="visible"

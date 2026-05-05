@@ -22,7 +22,7 @@ import Synapse from './Synapse';
 
 /** Fallback color when the source node can't be resolved (shouldn't happen
  * in practice — every connection's endpoints are seeded in data). */
-const FALLBACK_COLOR = '#7CD3FF'; // --synapse
+const FALLBACK_COLOR = '#5B8FFF'; // --synapse
 
 export default function ConnectionsLayer() {
   const connections = useGraphStore((s) => s.connections);

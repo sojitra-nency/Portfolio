@@ -183,7 +183,7 @@ export default function useEasterEggs() {
         e.key === 'Enter' &&
         useGraphStore.getState().activeNodeId === GHOST_NODE_ID
       ) {
-        console.log('%c' + GHOST_MESSAGE, 'color: #7CD3FF; font-family: monospace');
+        console.log('%c' + GHOST_MESSAGE, 'color: #5B8FFF; font-family: monospace');
       }
     };
 
@@ -223,7 +223,7 @@ function activateDevMode() {
   if (!injected) return; // already present — don't double-log
 
   console.log('%c' + ASCII_SIGNATURE, 'color: #FFD700; font-family: monospace; font-size: 11px');
-  console.log('%c↑↑↓↓←→←→BA — sequence recognised.', 'color: #7CD3FF; font-family: monospace');
+  console.log('%c↑↑↓↓←→←→BA — sequence recognised.', 'color: #5B8FFF; font-family: monospace');
 
   // Give the force layout a tick to receive the new node before firing.
   setTimeout(() => {

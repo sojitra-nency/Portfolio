@@ -49,7 +49,7 @@ function Brand() {
         )}
         <span
           className="relative block h-2.5 w-2.5 rounded-full bg-[var(--synapse)]"
-          style={{ boxShadow: '0 0 10px rgba(124, 211, 255, 0.7)' }}
+          style={{ boxShadow: '0 0 10px rgba(91, 143, 255, 0.7)' }}
         />
       </div>
       <div className="flex flex-col leading-tight">
@@ -77,7 +77,7 @@ export default function CornerHUD() {
       variants={hudEnter(reducedMotion)}
       initial="hidden"
       animate="visible"
-      className="fixed inset-x-0 top-0 z-30 flex items-start px-6 py-6 pointer-events-none"
+      className="fixed inset-x-0 top-0 z-30 flex items-start px-6 py-6 pointer-events-none opacity-50 hover:opacity-100 transition-opacity duration-300"
     >
       <div className="pointer-events-auto">
         <Brand />

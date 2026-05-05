@@ -99,7 +99,7 @@ function Synapse({
     if (!source || !target) return null;
     const points = computeCurvePoints(source, target, 0.2, 20);
     const curve = catmullRomPath(points);
-    return new THREE.TubeGeometry(curve, 24, 0.12, 8);
+    return new THREE.TubeGeometry(curve, 24, 0.10, 8);
   }, [source, target]);
 
   // Per-instance material — drei's shaderMaterial clones uniforms.

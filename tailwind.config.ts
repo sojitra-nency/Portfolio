@@ -9,9 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#0A0A1A',
-        surface: '#12121F',
+        background: '#060612',
+        surface: '#0C0C20',
         foreground: '#F0F0F0',
+        // HUD accent colors — match CSS variable updates in globals.css
+        synapse: '#5B8FFF',
+        rim: '#9966FF',
         // Neural category colours — must match CATEGORY_COLORS in src/data/types.ts
         'neural-core':       '#FFD700',
         'neural-about':      '#00F0FF',

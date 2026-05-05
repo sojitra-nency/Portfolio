@@ -57,7 +57,7 @@ const NeuronHaloMaterial = createShaderMaterial({
 // ---------------------------------------------------------------------------
 
 /** Halo world size = parent node size × HALO_SCALE. */
-const HALO_SCALE = 2.5;
+const HALO_SCALE = 4.5;
 
 export interface NeuronHaloProps {
   /** Category color — accepts any CSS / hex / 0x number string. */
@@ -68,8 +68,10 @@ export interface NeuronHaloProps {
   /** Global halo opacity (0..1). Defaults to 1. Lowered for dimmed nodes
    * such as unvisited clusters during progressive discovery. */
   opacity?: number;
-  /** Parent neuron's radius (world units). The halo renders at 2.5× this. */
+  /** Parent neuron's radius (world units). The halo renders at HALO_SCALE× this. */
   scale: number;
+  /** Override the halo scale multiplier per node level. */
+  haloScaleOverride?: number;
 }
 
 export default function NeuronHalo({
@@ -77,9 +79,10 @@ export default function NeuronHalo({
   pulseRef,
   opacity = 1,
   scale,
+  haloScaleOverride,
 }: NeuronHaloProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const haloSize = scale * HALO_SCALE;
+  const haloSize = scale * (haloScaleOverride ?? HALO_SCALE);
 
   // Fresh material per instance — drei's shaderMaterial clones uniforms
   // so per-neuron color/opacity/pulse stay isolated.

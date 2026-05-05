@@ -115,7 +115,7 @@ export default function CoherenceMeter() {
         variants={hudEnter(reducedMotion)}
         initial="hidden"
         animate="visible"
-        className="fixed top-[72px] left-6 z-30 pointer-events-none"
+        className="fixed top-[72px] left-6 z-30 pointer-events-none opacity-40 hover:opacity-100 transition-opacity duration-300"
       >
         <div className="relative" style={{ width: SIZE, height: SIZE }}>
           <svg

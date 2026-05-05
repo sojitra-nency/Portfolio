@@ -27,7 +27,7 @@ export default function QuickViewPortal() {
   return (
     <>
       <motion.div
-        className="fixed bottom-6 z-30 pointer-events-auto"
+        className="fixed bottom-6 z-30 pointer-events-auto opacity-50 hover:opacity-100 transition-opacity duration-300"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0, right: tabVisible ? 56 : 24 }}
         transition={{ duration: tabVisible ? 0.18 : 0.5, delay: tabVisible ? 0 : 0.3, ease: EASE_EXPO }}
@@ -39,8 +39,8 @@ export default function QuickViewPortal() {
             className="absolute inset-0 rounded-full pointer-events-none"
             animate={{
               boxShadow: hovered
-                ? '0 0 32px 6px rgba(124,211,255,0.35)'
-                : ['0 0 8px 0px rgba(124,211,255,0.08)', '0 0 18px 2px rgba(124,211,255,0.18)', '0 0 8px 0px rgba(124,211,255,0.08)'],
+                ? '0 0 32px 6px rgba(91,143,255,0.35)'
+                : ['0 0 8px 0px rgba(91,143,255,0.08)', '0 0 18px 2px rgba(91,143,255,0.18)', '0 0 8px 0px rgba(91,143,255,0.08)'],
             }}
             transition={hovered
               ? { duration: 0.2 }
@@ -60,13 +60,13 @@ export default function QuickViewPortal() {
           className="group relative flex items-center gap-2 rounded-full px-5 py-2.5 overflow-hidden"
           style={{
             background: hovered
-              ? 'rgba(124,211,255,0.08)'
-              : 'rgba(124,211,255,0.04)',
-            border: `1px solid rgba(124,211,255,${hovered ? '0.45' : '0.2'})`,
+              ? 'rgba(91,143,255,0.08)'
+              : 'rgba(91,143,255,0.04)',
+            border: `1px solid rgba(91,143,255,${hovered ? '0.45' : '0.2'})`,
             backdropFilter: 'blur(16px)',
             boxShadow: hovered
-              ? 'inset 0 1px 0 rgba(124,211,255,0.2)'
-              : 'inset 0 1px 0 rgba(124,211,255,0.06)',
+              ? 'inset 0 1px 0 rgba(91,143,255,0.2)'
+              : 'inset 0 1px 0 rgba(91,143,255,0.06)',
             transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
           }}
         >
@@ -77,7 +77,7 @@ export default function QuickViewPortal() {
             variants={{
               hovered: {
                 background: [
-                  'linear-gradient(90deg, transparent 0%, rgba(124,211,255,0.06) 50%, transparent 100%)',
+                  'linear-gradient(90deg, transparent 0%, rgba(91,143,255,0.06) 50%, transparent 100%)',
                 ],
               },
             }}
@@ -86,7 +86,7 @@ export default function QuickViewPortal() {
           {/* Prompt sigil */}
           <span
             className="font-mono-hud text-[10px] tracking-[0.1em] select-none transition-colors duration-200"
-            style={{ color: hovered ? 'rgba(124,211,255,0.7)' : 'rgba(124,211,255,0.3)' }}
+            style={{ color: hovered ? 'rgba(91,143,255,0.7)' : 'rgba(91,143,255,0.3)' }}
           >
             ~/
           </span>

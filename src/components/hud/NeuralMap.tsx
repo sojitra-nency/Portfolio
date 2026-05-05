@@ -171,7 +171,7 @@ export default function NeuralMap() {
   const activeParentDot = projected.find((p) => p.id === activeParentId);
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-6 left-6 z-50 opacity-40 hover:opacity-100 transition-opacity duration-300">
     <motion.div
       variants={hudEnter(reducedMotion)}
       initial="hidden"

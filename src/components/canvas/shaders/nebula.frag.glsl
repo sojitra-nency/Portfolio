@@ -88,19 +88,29 @@ void main() {
   float density = fbm(p * 1.2 + warp + uTime * 0.010);
   density = smoothstep(-0.25, 0.80, density);
 
-  // Brand palette as vec3s.
-  vec3 voidColor = vec3(0.016, 0.020, 0.055); // --void
-  vec3 cyan      = vec3(0.000, 0.941, 1.000); // #00F0FF
-  vec3 magenta   = vec3(1.000, 0.000, 0.898); // #FF00E5
+  // Deep navy-violet base — matches reference image's atmospheric background.
+  vec3 voidColor = vec3(0.012, 0.020, 0.110);
 
-  // Spatial tint variation — some regions lean cyan, others magenta.
+  // Richer indigo/violet tints for a more saturated atmospheric haze.
+  vec3 indigoTint  = vec3(0.10, 0.08, 0.40);
+  vec3 violetTint  = vec3(0.18, 0.10, 0.50);
+
+  // Spatial tint variation — some regions lean indigo, others violet.
   float tintMix    = smoothstep(0.1, 0.9, fbm(p * 0.5 + 12.34));
-  vec3  nebulaTint = mix(cyan, magenta, tintMix);
+  vec3  nebulaTint = mix(indigoTint, violetTint, tintMix);
 
-  // Intensity envelope: capped at 0.15 total, lifted from 0.06 → 0.15 by
-  // uActivity so the whole substrate "wakes up" when a neuron is focused.
-  float baseIntensity = 0.06 + uActivity * 0.09;
+  // Minimal intensity — reference background is mostly clean dark navy
+  // with only a hint of cloud structure near the center.
+  float baseIntensity = 0.08 + uActivity * 0.05;
   vec3  color = voidColor + nebulaTint * baseIntensity * density;
+
+  // Soft violet wash near the star.
+  float centerGlow = exp(-length(p) * 2.0);
+  color += vec3(0.12, 0.08, 0.30) * centerGlow * 0.08;
+
+  // Tighter vignette — blacker corners matching reference.
+  float vignette = 1.0 - smoothstep(0.4, 1.3, length(p * vec2(0.7, 0.9)));
+  color *= mix(0.20, 1.0, vignette);
 
   gl_FragColor = vec4(color, 1.0);
 }

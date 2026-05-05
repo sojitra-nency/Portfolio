@@ -34,8 +34,8 @@ const PLANES = [
   { z: -180, count: 2200, parallax: 0.06, spreadX: 520, spreadY: 370, spreadZ: 40, sizeMin: 0.28, sizeMax: 0.65 },
   // Near layer — slightly brighter, fewer
   { z: -100, count: 1200, parallax: 0.10, spreadX: 380, spreadY: 270, spreadZ: 30, sizeMin: 0.35, sizeMax: 0.80 },
-  // Hero stars — sparse, large, punchy highlights
-  { z: -140, count: 200,  parallax: 0.05, spreadX: 750, spreadY: 540, spreadZ: 80, sizeMin: 0.70, sizeMax: 1.50 },
+  // Hero stars — sparse bokeh blobs, larger for soft haze effect
+  { z: -140, count: 200,  parallax: 0.05, spreadX: 750, spreadY: 540, spreadZ: 80, sizeMin: 1.00, sizeMax: 2.20 },
 ] as const;
 
 type PlaneConfig = (typeof PLANES)[number];
@@ -79,25 +79,30 @@ function StarPlane({
       matrix.compose(pos, quat, scale);
       mesh.setMatrixAt(i, matrix);
 
-      // Varied star colours: mix of blue-white (O/B type), pure white (A),
-      // and a few warm yellow-white (F/G) — gives the field a natural look.
-      const alpha = 0.70 + Math.random() * 0.30;
+      // Star colours shifted toward blue-violet bokeh to match the reference
+      // image's background depth haze. Higher alpha makes the haze more visible.
+      const alpha = 0.80 + Math.random() * 0.20;
       const starType = Math.random();
       let r, g, b;
-      if (starType < 0.55) {
-        // Blue-white (most common in deep field)
-        r = alpha * (0.80 + Math.random() * 0.15);
-        g = alpha * (0.88 + Math.random() * 0.10);
-        b = alpha * 1.00;
-      } else if (starType < 0.85) {
-        // Pure white
-        const w = alpha * (0.92 + Math.random() * 0.08);
-        r = w; g = w; b = w;
+      if (starType < 0.50) {
+        // Electric blue-violet (dominant — matches dendrite color palette)
+        r = alpha * (0.35 + Math.random() * 0.20);
+        g = alpha * (0.40 + Math.random() * 0.15);
+        b = alpha * (0.90 + Math.random() * 0.10);
+      } else if (starType < 0.75) {
+        // Soft violet-purple bokeh blobs
+        r = alpha * (0.55 + Math.random() * 0.25);
+        g = alpha * (0.30 + Math.random() * 0.15);
+        b = alpha * (0.85 + Math.random() * 0.15);
+      } else if (starType < 0.92) {
+        // Near-white with slight blue tint
+        const w = alpha * (0.85 + Math.random() * 0.15);
+        r = w * 0.88; g = w * 0.92; b = w;
       } else {
-        // Warm yellow-white
-        r = alpha * 1.00;
-        g = alpha * (0.90 + Math.random() * 0.08);
-        b = alpha * (0.72 + Math.random() * 0.15);
+        // Rare warm accent — tiny orange-red pinpoints for depth contrast
+        r = alpha * (0.90 + Math.random() * 0.10);
+        g = alpha * (0.45 + Math.random() * 0.15);
+        b = alpha * (0.15 + Math.random() * 0.15);
       }
       color.setRGB(r, g, b);
       mesh.setColorAt(i, color);
@@ -147,6 +152,90 @@ function StarPlane({
 }
 
 // ---------------------------------------------------------------------------
+// BokehLayer — soft glowing orange/violet particles for atmospheric depth
+// ---------------------------------------------------------------------------
+
+const BOKEH_COUNT = 120;
+const BOKEH_SPREAD_X = 600;
+const BOKEH_SPREAD_Y = 420;
+const BOKEH_Z_MIN = -300;
+const BOKEH_Z_MAX = -100;
+
+function BokehLayer() {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const matrix = new THREE.Matrix4();
+    const pos = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    const color = new THREE.Color();
+
+    for (let i = 0; i < BOKEH_COUNT; i++) {
+      pos.set(
+        (Math.random() * 2 - 1) * BOKEH_SPREAD_X,
+        (Math.random() * 2 - 1) * BOKEH_SPREAD_Y,
+        BOKEH_Z_MIN + Math.random() * (BOKEH_Z_MAX - BOKEH_Z_MIN),
+      );
+      // Larger soft blobs in front, smaller far away.
+      const sizeBoost = 0.5 + (pos.z - BOKEH_Z_MIN) / (BOKEH_Z_MAX - BOKEH_Z_MIN);
+      scale.setScalar((1.0 + Math.random() * 1.4) * sizeBoost);
+      matrix.compose(pos, quat, scale);
+      mesh.setMatrixAt(i, matrix);
+
+      const roll = Math.random();
+      if (roll < 0.6) {
+        // Warm orange-amber (matches dendrite tip terminals).
+        color.setRGB(
+          0.95 + Math.random() * 0.05,
+          0.55 + Math.random() * 0.20,
+          0.30 + Math.random() * 0.15,
+        );
+      } else if (roll < 0.9) {
+        // Violet bokeh.
+        color.setRGB(
+          0.55 + Math.random() * 0.20,
+          0.40 + Math.random() * 0.15,
+          0.95 + Math.random() * 0.05,
+        );
+      } else {
+        // Pale blue-white highlights.
+        color.setRGB(
+          0.70 + Math.random() * 0.15,
+          0.80 + Math.random() * 0.15,
+          1.00,
+        );
+      }
+      mesh.setColorAt(i, color);
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, []);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, BOKEH_COUNT]}
+      frustumCulled={false}
+      renderOrder={0}
+    >
+      <sphereGeometry args={[1, 8, 6]} />
+      <meshBasicMaterial
+        transparent
+        opacity={0.30}
+        depthWrite={false}
+        depthTest={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </instancedMesh>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // StarField — exported scene component
 // ---------------------------------------------------------------------------
 
@@ -161,6 +250,7 @@ export default function StarField() {
       {PLANES.map((config) => (
         <StarPlane key={config.z} config={config} halveCount={halveCount} />
       ))}
+      <BokehLayer />
     </>
   );
 }

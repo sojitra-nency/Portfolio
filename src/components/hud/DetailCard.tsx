@@ -297,7 +297,7 @@ export default function DetailCard() {
           transition={{ duration: 0.18, ease: EASE_EXPO }}
           className="fixed inset-y-0 right-0 z-40 w-10 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/[0.04] transition-colors duration-150"
           style={{
-            background: 'rgba(8,8,20,0.97)',
+            background: 'rgba(10,6,28,0.97)',
             borderLeft: `2px solid ${color}`,
             boxShadow: `0 0 20px ${color}40, -4px 0 24px rgba(0,0,0,0.5)`,
           }}
@@ -357,15 +357,15 @@ export default function DetailCard() {
               ? 'relative flex flex-col w-full h-[65vh] rounded-t-2xl overflow-hidden pointer-events-auto'
               : 'relative flex flex-col h-full overflow-hidden pointer-events-auto flex-1'}
             style={isMobile ? {
-              background: 'rgba(8,8,20,0.96)',
-              border: `1px solid rgba(255,255,255,0.1)`,
-              boxShadow: `0 20px 60px -20px ${color}40, inset 0 1px 0 rgba(255,255,255,0.08)`,
+              background: 'rgba(12,8,32,0.96)',
+              border: `1px solid rgba(153,102,255,0.15)`,
+              boxShadow: `0 20px 60px -20px ${color}40, inset 0 1px 0 rgba(153,102,255,0.10)`,
             } : {
               width: '100%',
-              background: 'rgba(8,8,20,0.97)',
-              borderLeft: `1px solid rgba(255,255,255,0.08)`,
-              borderTop: `1px solid rgba(255,255,255,0.06)`,
-              boxShadow: `-16px 0 60px -8px rgba(0,0,0,0.6), inset 1px 0 0 rgba(255,255,255,0.06)`,
+              background: 'rgba(10,6,28,0.97)',
+              borderLeft: `1px solid rgba(153,102,255,0.12)`,
+              borderTop: `1px solid rgba(153,102,255,0.08)`,
+              boxShadow: `-16px 0 60px -8px rgba(0,0,0,0.7), inset 1px 0 0 rgba(153,102,255,0.08)`,
             }}
             role="dialog"
             aria-modal="true"

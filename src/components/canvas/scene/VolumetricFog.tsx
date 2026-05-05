@@ -16,7 +16,7 @@ export interface VolumetricFogProps {
   /** Exp2 density. Defaults to 0.005. Use {@link fogDensityForTier} to
    * pick a tier-appropriate value. */
   density?: number;
-  /** Fog color. Defaults to `--void` (`#04050E`). */
+  /** Fog color. Defaults to `--void` (`#010208`). */
   color?: string;
 }
 
@@ -27,7 +27,7 @@ export function fogDensityForTier(tier: number): number {
 
 export default function VolumetricFog({
   density = 0.005,
-  color = '#04050E',
+  color = '#010208',
 }: VolumetricFogProps = {}) {
   // R3F 9 requires `args` on primitive JSX; FogExp2 constructor is (color, density).
   return <fogExp2 attach="fog" args={[color, density]} />;

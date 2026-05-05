@@ -25,6 +25,8 @@ import NebulaBackground from './scene/NebulaBackground';
 import StarField from './scene/StarField';
 import VolumetricFog from './scene/VolumetricFog';
 import SceneLighting from './scene/SceneLighting';
+import DendriteField from './scene/DendriteField';
+import CentralStar from './scene/CentralStar';
 import NeuralNetwork from './NeuralNetwork';
 import UnlockReveal from './nodes/UnlockReveal';
 import CinemaCamera from './camera/CinemaCamera';
@@ -77,10 +79,10 @@ function CanvasFallback() {
       aria-labelledby="neural-fallback-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--void)] px-6 text-white"
     >
-      <div className="max-w-md rounded-xl border border-[color:var(--synapse)]/20 bg-[color:var(--void-warm)]/70 backdrop-blur-md p-8 text-center shadow-[0_20px_80px_-20px_rgba(124,211,255,0.25)]">
+      <div className="max-w-md rounded-xl border border-[color:var(--synapse)]/20 bg-[color:var(--void-warm)]/70 backdrop-blur-md p-8 text-center shadow-[0_20px_80px_-20px_rgba(91,143,255,0.25)]">
         <div
           aria-hidden
-          className="mx-auto mb-5 h-2.5 w-2.5 rounded-full bg-[var(--synapse)] animate-neural-pulse shadow-[0_0_18px_rgba(124,211,255,0.7)]"
+          className="mx-auto mb-5 h-2.5 w-2.5 rounded-full bg-[var(--synapse)] animate-neural-pulse shadow-[0_0_18px_rgba(91,143,255,0.7)]"
         />
         <h2
           id="neural-fallback-title"
@@ -139,13 +141,15 @@ export default function NeuralScene() {
           }}
           style={{ overflow: 'visible' }}
         >
-          <color attach="background" args={['#04050E']} />
+          <color attach="background" args={['#03061A']} />
 
           <Suspense fallback={null}>
             <NebulaBackground />
             <StarField />
             <VolumetricFog />
             <SceneLighting />
+            <DendriteField />
+            <CentralStar />
             <NeuralNetwork />
             <UnlockReveal />
             <CinemaCamera />

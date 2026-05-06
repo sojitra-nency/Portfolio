@@ -41,6 +41,7 @@ import { useExplorationStore } from '@/store/useExplorationStore';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from '@/data/types';
 import { getNeighbors } from '@/lib/graph-math';
 import { EASE_EXPO } from '@/lib/neural-motion';
+import { cameraSignals } from '@/lib/cameraControls';
 
 // ---------------------------------------------------------------------------
 // L-bracket corner marker
@@ -247,6 +248,9 @@ export default function DetailCard() {
     }
     activate(id);
     useExplorationStore.getState().visit(id);
+    // Reset any user-applied zoom/pan offsets so the camera lands precisely
+    // on the targeted neuron rather than at a position skewed by prior input.
+    cameraSignals.resetRequested = true;
     useCinemaStore.getState().focusOn(id);
     useHudStore.getState().setDetailOpen(true);
   };

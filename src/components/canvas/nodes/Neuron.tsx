@@ -75,6 +75,18 @@ function Neuron({ node }: NeuronProps) {
   const isActive = useGraphStore((s) => s.activeNodeId === node.id);
   const position = useGraphStore((s) => s.positions.get(node.id));
 
+  // Is this node a 1-hop neighbor of the currently active node?
+  // Used to surface labels on every directly connected neuron when one is
+  // selected — "click a node, see all its connected neurons named."
+  const isNeighborOfActive = useGraphStore((s) => {
+    if (!s.activeNodeId || s.activeNodeId === node.id) return false;
+    for (const c of s.connections) {
+      if (c.sourceId === s.activeNodeId && c.targetId === node.id) return true;
+      if (c.targetId === s.activeNodeId && c.sourceId === node.id) return true;
+    }
+    return false;
+  });
+
   // Stable action refs (Zustand doesn't recreate actions).
   const hover = useGraphStore((s) => s.hover);
   const activate = useGraphStore((s) => s.activate);
@@ -168,9 +180,17 @@ function Neuron({ node }: NeuronProps) {
   // Steady activation multiplier: 0 idle, 0.6 hover, 1 active.
   const state = isActive ? 1 : isHovered ? 0.6 : 0;
   // Hide labels by default — only the core (level 0) shows persistently.
-  // Other nodes reveal their label on hover/active. Keeps the composition
-  // clean and matches the reference image's pure-art aesthetic.
-  const showLabel = node.level === 0 || isHovered || isActive;
+  // Other nodes reveal their label on hover, active, or when they are a
+  // 1-hop neighbor of the active node (so clicking a neuron labels all of
+  // its connected neighbors at once).
+  const showLabel =
+    node.level === 0 || isHovered || isActive || isNeighborOfActive;
+
+  // Highlight tier drives label sizing/styling:
+  //   2 = active or hovered (primary focus)
+  //   1 = neighbor of active (contextual)
+  //   0 = ambient / level-0 origin
+  const labelTier = isActive || isHovered ? 2 : isNeighborOfActive ? 1 : 0;
 
   // ── Pointer handlers ────────────────────────────────────────────────────
   //
@@ -306,7 +326,10 @@ function Neuron({ node }: NeuronProps) {
         <Html
           position={[0, size + 0.8, 0]}
           center
-          distanceFactor={40}
+          // Larger distanceFactor → labels stay readable as the camera pulls
+          // back. Combined with the min-font-size in CSS, labels can shrink
+          // perspective-correctly up close but never below a legible floor.
+          distanceFactor={120}
           zIndexRange={[10, 0]}
           style={{
             pointerEvents: 'none',
@@ -314,26 +337,73 @@ function Neuron({ node }: NeuronProps) {
           }}
         >
           <span
+            data-label-tier={labelTier}
             style={{
-              display: 'inline-block',
-              padding: '3px 10px',
-              borderRadius: '4px',
-              background: 'rgba(4, 5, 14, 0.92)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: labelTier === 2 ? '5px 12px' : '4px 10px',
+              borderRadius: '999px',
+              background:
+                labelTier === 2
+                  ? `linear-gradient(135deg, ${color}26, rgba(8,10,22,0.96))`
+                  : labelTier === 1
+                    ? `linear-gradient(135deg, ${color}1a, rgba(6,8,18,0.94))`
+                    : 'rgba(6,8,18,0.92)',
+              border:
+                labelTier === 2
+                  ? `1px solid ${color}cc`
+                  : labelTier === 1
+                    ? `1px solid ${color}66`
+                    : '1px solid rgba(255,255,255,0.18)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
               color: '#ffffff',
               fontFamily: 'var(--font-jetbrains), monospace',
-              fontSize: node.level === 0 ? '13px' : node.level === 1 ? '11px' : '10px',
-              fontWeight: node.level <= 1 ? 600 : 500,
+              // Larger base sizes — at distanceFactor=120 these read clean
+              // even at full zoom-out.
+              fontSize:
+                labelTier === 2
+                  ? node.level <= 1
+                    ? '20px'
+                    : '17px'
+                  : node.level === 0
+                    ? '20px'
+                    : node.level === 1
+                      ? '17px'
+                      : '15px',
+              fontWeight: labelTier === 2 ? 700 : node.level <= 1 ? 600 : 500,
               textAlign: 'center',
               whiteSpace: 'nowrap',
-              letterSpacing: '0.06em',
+              letterSpacing: '0.08em',
               textTransform: node.level <= 1 ? 'uppercase' : 'none',
-              textShadow: '0 0 8px rgba(255,255,255,0.4)',
-              lineHeight: '1.4',
+              textShadow:
+                labelTier === 2
+                  ? `0 0 14px ${color}, 0 0 4px rgba(0,0,0,0.9)`
+                  : '0 0 6px rgba(0,0,0,0.85)',
+              boxShadow:
+                labelTier === 2
+                  ? `0 0 24px ${color}55, 0 4px 16px rgba(0,0,0,0.55)`
+                  : labelTier === 1
+                    ? `0 0 12px ${color}33, 0 2px 8px rgba(0,0,0,0.4)`
+                    : '0 2px 8px rgba(0,0,0,0.45)',
+              lineHeight: '1.3',
+              transition:
+                'background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, padding 160ms ease',
             }}
           >
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                width: labelTier === 2 ? 7 : 5,
+                height: labelTier === 2 ? 7 : 5,
+                borderRadius: '50%',
+                background: color,
+                boxShadow: `0 0 ${labelTier === 2 ? 10 : 6}px ${color}`,
+                flexShrink: 0,
+              }}
+            />
             {node.label}
           </span>
         </Html>
